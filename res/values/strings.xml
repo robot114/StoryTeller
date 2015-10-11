@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">StoryTeller</string>
+    <string name="opneOne">Open One Audio</string>
+    <string name="play">Play</string>
+    <string name="playForward">Play Forward</string>
+    <string name="stop">Stop</string>
+    <string name="playRewind">Rewind</string>
+    <string name="hintOfPlayFile">Select a file to play</string>
+    <string name="openFolder">Open a folder to play</string>
+    <string name="labelPath">Path:</string>
+    <string name="labelAlbum">Album:</string>
+    <string name="labelArtist">Artist:</string>
+    <string name="labelDuration">Duration:</string>
+
+</resources>
