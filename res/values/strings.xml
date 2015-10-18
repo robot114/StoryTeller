@@ -13,5 +13,7 @@
     <string name="labelAlbum">Album:</string>
     <string name="labelArtist">Artist:</string>
     <string name="labelDuration">Duration:</string>
+    <string name="toExpandOrCollapse">To expand or collapse</string>
+    <string name="noMediaToPlay">No media can be played now!</string>
 
 </resources>

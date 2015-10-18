@@ -1,11 +1,7 @@
 package com.zsm.storyteller.ui;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import android.app.Activity;
@@ -14,9 +10,10 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
+import android.widget.ExpandableListView;
+import android.widget.ExpandableListView.OnChildClickListener;
+import android.widget.ExpandableListView.OnGroupClickListener;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,39 +21,16 @@ import com.zsm.android.ui.fileselector.FileOperation;
 import com.zsm.android.ui.fileselector.FileSelector;
 import com.zsm.android.ui.fileselector.OnHandleFileListener;
 import com.zsm.log.Log;
+import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
-import com.zsm.storyteller.R.drawable;
-import com.zsm.storyteller.R.id;
-import com.zsm.storyteller.R.layout;
-import com.zsm.storyteller.R.string;
+import com.zsm.storyteller.preferences.Preferences;
 
-public class MainActivity extends Activity implements OnHandleFileListener {
-
-	private final class FolderOrExtFilter implements FileFilter {
-		@Override
-		public boolean accept(File pathname) {
-			int extIndex = pathname.getName().lastIndexOf( '.' );
-			boolean inc = false;
-			if( extIndex >= 0 ) {
-				String ext = pathname.getName().substring( extIndex );
-				for( String e : EXTENSION ) {
-					if( e.equalsIgnoreCase( ext ) ) {
-						inc = true;
-						break;
-					}
-				}
-			}
-			return pathname.isDirectory() || inc;
-		}
-	}
+public class MainActivity extends Activity
+				implements OnHandleFileListener, OnChildClickListener, Playable {
 
 	private enum PLAYER_STATE { 
 		IDLE, INITIALIZED, PREPARED, STARTED, PAUSED, STOPPED, PLAYBACKCOMPLETED };
 		
-	private enum LIST_TYPE {
-		SINGLE, FOLDER, LIST
-	}
-	
 	private final static String[] EXTENSION = {
 		".3gp", ".aac", ".flac", ".m4a", ".mp4", ".mid", ".mp3", ".xmf",
 		".mxmf", ".rtx", ".rtttl", ".ota", ".imy", ".ogg", ".mkv", ".wav"
@@ -64,8 +38,8 @@ public class MainActivity extends Activity implements OnHandleFileListener {
 	
 	private ImageView playPause;
 	private TextView playingText;
-	private ListView playListView;
-	private ArrayAdapter<File> playListAdpater;
+	private ExpandableListView playListView;
+	private MediaInfoListAdapter playListAdapter;
 	private MediaInfoView mediaInfoView;
 	
 	private MediaPlayer mediaPlayer;
@@ -74,15 +48,11 @@ public class MainActivity extends Activity implements OnHandleFileListener {
 	private Drawable playIcon;
 	private Drawable pauseIcon;
 	
-	private LIST_TYPE listType;
-	private File playingFile;
-	private File playingFolder;
-	private List<File> playList;
+	private List<Uri> playList;
 
-	private FolderOrExtFilter fileFilter;
+	private PlayInfo playInfo;
 
 	public MainActivity() {
-		fileFilter = new FolderOrExtFilter();
 	}
 	
 	@Override
@@ -93,10 +63,19 @@ public class MainActivity extends Activity implements OnHandleFileListener {
 		playPause = (ImageView)findViewById( R.id.imageViewPlay );
 		playingText = (TextView)findViewById( R.id.textViewPlayingFile );
 		
-		playListView = (ListView)findViewById( R.id.listViewPlayList );
-		playListAdpater
-			= new ArrayAdapter<File>( this, android.R.layout.simple_list_item_1 );
-		playListView.setAdapter(playListAdpater);
+		playListView = (ExpandableListView)findViewById( R.id.listPlayList );
+		playListAdapter = new MediaInfoListAdapter( this, this, playListView );
+		playListView.setAdapter(playListAdapter);
+		playListView.setOnChildClickListener( this );
+		playListView.setOnGroupClickListener(new OnGroupClickListener() {
+			@Override
+			public boolean onGroupClick(ExpandableListView parent, View v,
+										int groupPosition, long id) {
+				
+				playListView.expandGroup(groupPosition);
+				return true;
+			}
+		});
 		
 		mediaInfoView = (MediaInfoView)findViewById( R.id.viewMediaInfo );
 		mediaInfoView.setVisibility( View.INVISIBLE );
@@ -106,7 +85,14 @@ public class MainActivity extends Activity implements OnHandleFileListener {
 		
 		mediaPlayer = new MediaPlayer();
 		
-		playList = new ArrayList<File>();
+		playInfo = Preferences.getInstance().readPlayListInf();
+		playList = playInfo.getPlayList(EXTENSION, true);
+		playListAdapter.setData(playList);
+		playListAdapter.notifyDataSetChanged();
+		Uri currentPlaying = playInfo.refreshCurrentPlaying();
+		if( currentPlaying != null ) {
+			selectOneToPlay( currentPlaying );
+		}
 	}
 	
 	public void onOpenOne( View v ) {
@@ -118,7 +104,7 @@ public class MainActivity extends Activity implements OnHandleFileListener {
 	}
 	
 	public void onPlayPause( View v ) {
-		if( playingFile == null ) {
+		if( playInfo.refreshCurrentPlaying() == null ) {
 			Toast.makeText( this, R.string.openPlayFileFirst, Toast.LENGTH_LONG )
 				 .show();
 			return;
@@ -129,93 +115,106 @@ public class MainActivity extends Activity implements OnHandleFileListener {
 			playerState = PLAYER_STATE.PAUSED;
 			playPause.setImageDrawable(playIcon);
 		} else {
-			if( playerState != PLAYER_STATE.PREPARED && playerState != PLAYER_STATE.PAUSED ) {
-				try {
-					mediaPlayer.prepare();
-					mediaPlayer.seekTo( 0 );
-				} catch (IllegalStateException | IOException e) {
-					Log.e( e, "Cannot prepare the source: " + playingFile );
-					Toast.makeText( this, R.string.openFileFailed, Toast.LENGTH_LONG )
-					 	 .show();
-					return;
-				}
-			}
-			mediaPlayer.start();
-			playerState = PLAYER_STATE.STARTED;
-			playPause.setImageDrawable(pauseIcon);
+			play();
 		}
 	}
 
+	private void play() {
+		if( playerState == PLAYER_STATE.STOPPED ) {
+			try {
+				mediaPlayer.prepare();
+			} catch (IllegalArgumentException | SecurityException
+					| IllegalStateException | IOException e) {
+				
+				Log.e( e, "Cannot make the file to be played: "
+							+ playInfo.refreshCurrentPlaying() );
+				Toast.makeText( this, R.string.openFileFailed, Toast.LENGTH_LONG )
+					 .show();
+				return;
+			}
+			mediaPlayer.seekTo( 0 );
+		}
+		mediaPlayer.start();
+		playerState = PLAYER_STATE.STARTED;
+		playPause.setImageDrawable(pauseIcon);
+	}
+
 	public void onStop( View v ) {
-		mediaPlayer.stop();
-		playerState = PLAYER_STATE.STOPPED;
-		playPause.setImageDrawable(playIcon);
+		stop();
+	}
+
+	public void onNext( View v ) {
+		Uri uri = playInfo.nextOne();
+		if( uri != null ) {
+			selectOneToPlay(uri);
+		} else {
+			stop();
+		}
+	}
+	
+	public void onPrevious( View v ) {
+		Uri uri = playInfo.previousOne();
+		if( uri != null ) {
+			selectOneToPlay(uri);
+		} else {
+			stop();
+		}
 	}
 	
 	@Override
 	public void handleFile(FileOperation operation, String filePath) {
 		File f = new File( filePath );
 		if( operation == FileOperation.FOLDER ) {
-			playingFolder = new File( filePath );
-			listType = LIST_TYPE.FOLDER;
-			playList.clear();
-			scanFolder( f, playList );
+			playInfo
+				= new PlayInfo( PlayInfo.LIST_TYPE.FOLDER, Uri.fromFile(f), null );
 		} else {
-			playingFile = f;
-			playList.clear();
-			playList.add( playingFile );
-			listType = LIST_TYPE.SINGLE;
+			playInfo
+				= new PlayInfo( PlayInfo.LIST_TYPE.SINGLE, Uri.fromFile(f), null );
+		}
+
+		playListAdapter.setData( playInfo.getPlayList(EXTENSION, true) );
+		playListAdapter.notifyDataSetChanged();
+		Uri currentPlaying = playInfo.refreshCurrentPlaying();
+		if( currentPlaying == null ) {
+			Toast.makeText( this, R.string.noMediaToPlay, Toast.LENGTH_LONG )
+			 	 .show();
+			return;
+		} else {
+			selectOneToPlay( currentPlaying );
 		}
 		
-		playListAdpater.clear();
-		playListAdpater.addAll(playList);
-		playListAdpater.notifyDataSetChanged();
-		if( playList.size() > 0 ) {
-			playingFile = playList.get( 0 );
-		} else {
-			return;
-		}
+		Preferences.getInstance().savePlayListInfo( playInfo );
+	}
+
+	@Override
+	public void selectOneToPlay(Uri uri) {
+		playInfo.setCurrentPlaying( uri );
+		mediaPlayer.reset();
+		playerState = PLAYER_STATE.IDLE;
 		
 		try {
-			mediaPlayer.reset();
-			playerState = PLAYER_STATE.IDLE;
-			Uri uriFromFile = Uri.fromFile(playingFile);
-			mediaInfoView.setDataSource(uriFromFile);
-			mediaInfoView.setVisibility( View.VISIBLE );
-			mediaPlayer.setDataSource(this, uriFromFile );
+			mediaInfoView.setDataSource(uri);
+			mediaPlayer.setDataSource(this, uri );
 			mediaPlayer.prepare();
-			playerState = PLAYER_STATE.PREPARED;
-			playingText.setText( playingFile.getName() );
-			playPause.setImageDrawable(playIcon);
 		} catch (IllegalArgumentException | SecurityException
 				| IllegalStateException | IOException e) {
 			
-			Log.e( e, "Cannot make the file to be played: " + filePath );
+			Log.e( e, "Cannot make the file to be played: " + uri );
 			Toast.makeText( this, R.string.openFileFailed, Toast.LENGTH_LONG )
 				 .show();
-		}
-	}
-
-	private void scanFolder( File folder, List<File> fileList ) {
-		if( !folder.exists() || !folder.isDirectory() ) {
 			return;
 		}
-		
-		File[] fs = folder.listFiles( fileFilter );
-		Arrays.sort( fs, new Comparator<File>() {
-			@Override
-			public int compare(File lhs, File rhs) {
-				return lhs.getName().compareToIgnoreCase( rhs.getName() );
-			}
-		});
-		
-		for( File f : fs ) {
-			if( f.isDirectory() ) {
-				scanFolder( f, fileList );
-			} else {
-				fileList.add( f );
-			}
-		}
+		mediaInfoView.setVisibility( View.VISIBLE );
+		playerState = PLAYER_STATE.PREPARED;
+		playingText.setText( uri.getLastPathSegment() );
+		playPause.setImageDrawable(playIcon);
+		play();
+	}
+
+	private void stop() {
+		mediaPlayer.stop();
+		playerState = PLAYER_STATE.STOPPED;
+		playPause.setImageDrawable(playIcon);
 	}
 	
 	@Override
@@ -224,5 +223,12 @@ public class MainActivity extends Activity implements OnHandleFileListener {
 		if( mediaPlayer != null ) {
 			mediaPlayer.release();
 		}
+	}
+
+	@Override
+	public boolean onChildClick(ExpandableListView parent, View v,
+								int groupPosition, int childPosition, long id) {
+		selectOneToPlay( playList.get( groupPosition ) );
+		return true;
 	}
 }

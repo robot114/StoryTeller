@@ -13,7 +13,7 @@
         android:icon="@drawable/player"
         android:label="@string/app_name"
         android:theme="@style/AppTheme"
-        android:name="StoryTellerApp">
+        android:name=".app.StoryTellerApp">
         <activity
             android:name="com.zsm.storyteller.ui.MainActivity"
             android:label="@string/app_name" >

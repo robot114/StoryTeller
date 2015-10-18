@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" >
+
+    <ImageView
+        android:id="@+id/imageViewExpand"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:clickable="true"
+        android:contentDescription="@string/toExpandOrCollapse"
+        android:paddingEnd="@dimen/defaultPadding"
+        android:paddingStart="@dimen/defaultPadding"
+        android:src="@drawable/to_exapand" />
+
+    <TextView
+        android:id="@+id/textViewItem"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/imageViewExpand"
+        android:clickable="true"
+        android:paddingEnd="@dimen/defaultPadding"
+        android:paddingStart="@dimen/defaultPadding"
+        android:text="Medium Text"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+</RelativeLayout>

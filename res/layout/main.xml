@@ -3,7 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_margin="5dp"
-    android:onClick="onOpenFolder"
     android:padding="5dp"
     tools:context="${relativePackage}.${activityClass}" >
 
@@ -28,27 +27,19 @@
             android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
             android:contentDescription="@string/openFolder"
+            android:onClick="onOpenFolder"
             android:src="@drawable/open_folder" />
+
     </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/layoutController"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
+        android:layout_centerHorizontal="true"
         android:layout_margin="5dp" >
-
-        <ImageView
-            android:id="@+id/imageViewPlay"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="false"
-            android:layout_centerHorizontal="true"
-            android:clickable="true"
-            android:contentDescription="@string/play"
-            android:onClick="onPlayPause"
-            android:src="@drawable/play" />
 
         <ImageView
             android:id="@+id/imageViewForward"
@@ -63,21 +54,51 @@
             android:id="@+id/imageViewStop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_toLeftOf="@id/imageViewPlay"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@+id/imageViewRewind"
             android:clickable="true"
             android:contentDescription="@string/stop"
             android:onClick="onStop"
             android:src="@drawable/stop" />
 
         <ImageView
+            android:id="@+id/imageViewPlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@id/imageViewStop"
+            android:clickable="true"
+            android:contentDescription="@string/play"
+            android:onClick="onPlayPause"
+            android:src="@drawable/play" />
+
+        <ImageView
             android:id="@+id/imageViewRewind"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:layout_toLeftOf="@+id/imageViewStop"
+            android:layout_toEndOf="@+id/imageViewPrevious"
             android:contentDescription="@string/playRewind"
             android:src="@drawable/play_rewind" />
+
+        <ImageView
+            android:id="@+id/imageViewNext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@+id/imageViewForward"
+            android:onClick="onNext"
+            android:src="@drawable/play_next" />
+
+        <ImageView
+            android:id="@+id/imageViewPrevious"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="16dp"
+            android:onClick="onPrevious"
+            android:src="@drawable/play_prev" />
+
     </RelativeLayout>
 
     <TextView
@@ -114,15 +135,16 @@
 
         </LinearLayout>
 
-        <ListView
-            android:id="@+id/listViewPlayList"
+        <ExpandableListView
+            android:id="@+id/listPlayList"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_alignParentStart="true"
-            android:layout_margin="5dp"
-            android:layout_weight="1" >
+            android:layout_margin="@dimen/defaultPadding"
+            android:layout_weight="1"
+            android:groupIndicator="@null" >
 
-        </ListView>
+        </ExpandableListView>
 
     </LinearLayout>
 
