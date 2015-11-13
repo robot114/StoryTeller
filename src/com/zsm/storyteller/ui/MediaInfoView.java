@@ -2,6 +2,7 @@ package com.zsm.storyteller.ui;
 
 import java.io.File;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,10 +13,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TableLayout;
 import android.widget.TextView;
 
 import com.zsm.storyteller.R;
+import com.zsm.util.TextUtil;
 
 class MediaInfoView extends LinearLayout {
 
@@ -29,7 +30,7 @@ class MediaInfoView extends LinearLayout {
 	private MediaMetadataRetriever metaRetriver;
 	
 	private BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
-	private TableLayout tableView;
+	private long duration;
 	
 	public MediaInfoView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -75,7 +76,6 @@ class MediaInfoView extends LinearLayout {
 		textViewDuration = (TextView)findViewById( R.id.TextViewDuration );
 		textViewPath = (TextView)findViewById( R.id.textViewPath );
 		
-		tableView = (TableLayout)findViewById( R.id.tableView);
 	}
 	
 	void setDataSource( Uri uri ) {
@@ -90,6 +90,10 @@ class MediaInfoView extends LinearLayout {
 		textViewPath.setText(file.getAbsolutePath());
 	}
 
+	public long getMediaDuration() {
+		return duration;
+	}
+	
 	private void fillMediaInfo(String defaultTitle) {
 		byte[] pic = metaRetriver.getEmbeddedPicture();
 		Bitmap image = null;
@@ -120,8 +124,26 @@ class MediaInfoView extends LinearLayout {
 							 textViewAlbum);
 		fillViewWithMetaData(MediaMetadataRetriever.METADATA_KEY_ARTIST,
 							 textViewArtist);
-		fillViewWithMetaData(MediaMetadataRetriever.METADATA_KEY_DURATION,
-							 textViewDuration);
+		String durationStr
+			= metaRetriver.extractMetadata( 
+					MediaMetadataRetriever.METADATA_KEY_DURATION );
+        StringBuilder durationValue = new StringBuilder();
+        try {
+        	appendDurationText(durationStr, durationValue);
+        } catch ( NumberFormatException e ) {
+        	// Do nothing and an empty string will be set
+        }
+		textViewDuration.setText( durationValue );
+	}
+
+	@SuppressLint("DefaultLocale")
+	private void appendDurationText(String durationStr,
+									StringBuilder durationValue) {
+		
+		if( durationStr != null ) {
+			duration = Long.parseLong(durationStr);
+			TextUtil.appendDurationText(durationValue, duration);
+		}
 	}
 
 	private void fillViewWithMetaData(int keycode, TextView textView) {

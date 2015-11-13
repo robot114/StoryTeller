@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory 
+        android:icon="@drawable/play"
+        android:title="@string/playingSetting">
+        <com.zsm.storyteller.preferences.ForwardSettingPrference
+            android:layout="@layout/forward_setting"/>
+        <CheckBoxPreference
+            android:summaryOn="@string/autoStartOn"
+            android:key="AUTO_START_PLAYING"
+			android:enabled="true"
+			android:summaryOff="@string/autoStartOff"
+			android:title="@string/autoStartTitle"/>
+    </PreferenceCategory>
+</PreferenceScreen>

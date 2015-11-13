@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="defaultPadding">5dp</dimen>
+    <dimen name="titlePadding">5dp</dimen>
+    <dimen name="level1padding">20dp</dimen>
+    <dimen name="level2padding">40dp</dimen>
 </resources>

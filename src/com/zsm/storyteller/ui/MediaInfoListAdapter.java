@@ -14,17 +14,18 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.zsm.storyteller.R;
+import com.zsm.storyteller.play.PlayController;
 
 class MediaInfoListAdapter extends BaseExpandableListAdapter {
 
 	private List<Uri> data;
 	private Context context;
-	private Playable player;
+	private PlayController player;
 	
 	private LayoutInflater inflater;
 	private ExpandableListView listView;
 
-	MediaInfoListAdapter( Context context, Playable player,
+	MediaInfoListAdapter( Context context, PlayController player,
 						  ExpandableListView listView ) {
 		
 		this.context = context;
@@ -142,7 +143,7 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 		viewText.setOnClickListener( new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				player.selectOneToPlay( data.get((int) v.getTag()) );
+				player.selectOneToPlay( data.get((int) v.getTag()), 0 );
 			}
 		} );
 		return viewText;

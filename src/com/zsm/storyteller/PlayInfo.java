@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import com.zsm.log.Log;
 import com.zsm.storyteller.preferences.Preferences;
 
 import android.content.SharedPreferences;
@@ -46,28 +47,33 @@ public class PlayInfo {
 	private Uri currentPlaying;
 	private List<Uri> playList;
 	private int currentPlayingIndex;
+	private long currentPlayingPosition;
 
 	public enum LIST_TYPE {
 		SINGLE, FOLDER, LIST
 	}
 
-	public PlayInfo( LIST_TYPE type, Uri listInfo, Uri currentPlaying ) {
+	public PlayInfo( LIST_TYPE type, Uri listInfo, Uri currentPlaying,
+					 long currentPosition ) {
+		
 		this.listType = type;
 		this.listInfo = listInfo;
 		this.currentPlaying = currentPlaying;
+		this.currentPlayingPosition = currentPosition;
 		playList = null;
 	}
 	
 	public void toPreferences( SharedPreferences p ) {
-		p.edit().putString( Preferences.KEY_LIST_TYEP, listType.name() )
+		p.edit().putString( Preferences.KEY_LIST_TYPE, listType.name() )
 				.putString( Preferences.KEY_LIST_INFO, listInfo.toString() )
 				.putString( Preferences.KEY_CURRENT_PLAYING, currentPlaying.toString() )
+				.putLong( Preferences.KEY_CURRENT_POSITION, currentPlayingPosition )
 				.apply();
 	}
 	
 	public static PlayInfo fromPreferences( SharedPreferences p ) {
 		LIST_TYPE lt 
-			= LIST_TYPE.valueOf( p.getString(Preferences.KEY_LIST_TYEP,
+			= LIST_TYPE.valueOf( p.getString(Preferences.KEY_LIST_TYPE,
 											 LIST_TYPE.SINGLE.name() ) );
 		
 		String lis = p.getString(Preferences.KEY_LIST_INFO, null );
@@ -77,12 +83,14 @@ public class PlayInfo {
 		}
 		
 		String cps = p.getString(Preferences.KEY_CURRENT_PLAYING, null );
+		long cpos = 0;
 		Uri cp = null;
 		if( cps != null ) {
 			cp = Uri.parse( cps );
+			cpos = p.getLong( Preferences.KEY_CURRENT_POSITION, 0 );
 		}
 		
-		return new PlayInfo( lt, li, cp );
+		return new PlayInfo( lt, li, cp, cpos );
 	}
 	
 	public void setCurrentPlaying(Uri uri) {
@@ -96,6 +104,14 @@ public class PlayInfo {
 		Preferences.getInstance().setCurrentPlaying( currentPlaying );
 	}
 	
+	public long getCurrentPlayingPosition() {
+		return currentPlayingPosition;
+	}
+	
+	public void setCurrentPlayingPosition( long position ) {
+		currentPlayingPosition = position;
+		Preferences.getInstance().setCurrentPlayingPosition( position );
+	}
 	public List<Uri> getPlayList( String[] ext, boolean forceRefresh ) {
 		
 		if( listInfo == null ) {

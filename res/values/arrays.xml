@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="forwardSkipType">
+        <item >@string/prefForwardRewindByPercent</item>
+        <item >@string/prefForwardRewindBySecond</item>
+    </string-array>
+    <string-array name="forwardSkipValue">
+        <item >PERCENT</item>
+        <item >SECOND</item>
+    </string-array>
+    
+</resources>
