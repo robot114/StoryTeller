@@ -34,6 +34,8 @@ public class StoryTellerApp extends Application {
 		
 		player = new StoryPlayer( this );
 		playFileHandler = new PlayFileHandler(player);
+		
+		Log.d( this );
 	}
 	
 	public StoryPlayer getPlayer() {

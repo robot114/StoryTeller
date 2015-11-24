@@ -3,8 +3,10 @@ package com.zsm.storyteller.ui;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
+import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -20,7 +22,6 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-import com.zsm.log.Log;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
@@ -28,7 +29,6 @@ import com.zsm.storyteller.play.PlayerView;
 import com.zsm.storyteller.play.StoryPlayer;
 import com.zsm.storyteller.play.StoryPlayer.PLAYER_STATE;
 import com.zsm.storyteller.preferences.Preferences;
-import com.zsm.util.TextUtil;
 
 public class MainActivity extends Activity
 				implements PlayerView, OnChildClickListener {
@@ -42,12 +42,11 @@ public class MainActivity extends Activity
 	private Drawable playIcon;
 	private Drawable pauseIcon;
 	
-	private SeekBar progressBar;
-	private TextView textViewEllapse;
-	private TextView textViewRemain;
+	private TimedProgressBar progressBar;
 
 	private List<Uri> playList;
 	private PlayController player;
+	private BroadcastReceiver receiver;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -83,9 +82,7 @@ public class MainActivity extends Activity
 		playListAdapter.setData(playList);
 		playListAdapter.notifyDataSetChanged();
 		
-		progressBar = (SeekBar)findViewById( R.id.seekBarProgress );
-		textViewEllapse = (TextView)findViewById( R.id.textViewTimeEllapsed );
-		textViewRemain = (TextView)findViewById( R.id.TextViewTimeRemain );
+		progressBar = (TimedProgressBar)findViewById( R.id.timedProgressBar );
 		
 		progressBar.setOnSeekBarChangeListener( new OnSeekBarChangeListener() {
 
@@ -117,12 +114,27 @@ public class MainActivity extends Activity
 			
 		} );
 		
+		final PlayerViewReceiver pvr = new PlayerViewReceiver(this);
+		
+		receiver = new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				pvr.onReceive(context, intent);
+			}
+		};
+		
+		IntentFilter filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_DATA_SOURCE);
+		registerReceiver(receiver, filter);
+		filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_PLAYER_STATE);
+		registerReceiver(receiver, filter);
+		
 		player.updatePlayInfo( Preferences.getInstance().readPlayListInf() );
 	}
 	
 	@Override
 	protected void onDestroy() {
 		Preferences.getInstance().savePlayListInfo( player.getPlayInfo() );
+		unregisterReceiver(receiver);
 		super.onDestroy();
 	}
 
@@ -189,15 +201,12 @@ public class MainActivity extends Activity
 
 	@Override
 	public void setDuration(int duration) {
-		progressBar.setMax(duration);
+		progressBar.setDuration(duration);
 	}
 
 	@Override
 	public void updateTime(long currentPosition) {
-		progressBar.setProgress( (int) currentPosition );
-		textViewEllapse.setText( TextUtil.durationToText(currentPosition) );
-		textViewRemain.setText( TextUtil.durationToText(
-									progressBar.getMax() - currentPosition ) );
+		progressBar.updateTime( (int) currentPosition );
 	}
 
 	@Override
@@ -217,11 +226,11 @@ public class MainActivity extends Activity
 	}
 
 	@Override
-	public void setDataSource(Uri uri) {
+	public void setDataSource(Context context, Uri uri) {
 		mediaInfoView.setDataSource(uri);
 		mediaInfoView.setVisibility( View.VISIBLE );
 		playingText.setText( uri.getLastPathSegment() );
-		progressBar.setMax( (int) mediaInfoView.getMediaDuration() );
+		progressBar.setDuration( (int) mediaInfoView.getMediaDuration() );
 	}
 
 	@Override

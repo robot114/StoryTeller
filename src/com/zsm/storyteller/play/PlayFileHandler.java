@@ -4,7 +4,6 @@ import java.io.File;
 
 import android.app.Activity;
 import android.net.Uri;
-import android.view.View;
 
 import com.zsm.android.ui.fileselector.FileOperation;
 import com.zsm.android.ui.fileselector.FileSelector;

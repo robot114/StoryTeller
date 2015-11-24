@@ -7,11 +7,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import com.zsm.log.Log;
-import com.zsm.storyteller.preferences.Preferences;
-
 import android.content.SharedPreferences;
 import android.net.Uri;
+
+import com.zsm.storyteller.preferences.Preferences;
 
 public class PlayInfo {
 

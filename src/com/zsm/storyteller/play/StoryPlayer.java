@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnPreparedListener;
@@ -93,7 +94,7 @@ public class StoryPlayer implements PlayController {
 		mediaPlayer.start();
 		playerState = PLAYER_STATE.STARTED;
 		if( updateView ) {
-			playerView.updatePlayerState( playerState );
+			updatePlayerViewState();
 		}
 	}
 
@@ -102,7 +103,7 @@ public class StoryPlayer implements PlayController {
 		mediaPlayer.pause();
 		playerState = PLAYER_STATE.PAUSED;
 		if( updateView ) {
-			playerView.updatePlayerState( playerState );
+			updatePlayerViewState();
 		}
 	}
 	
@@ -114,7 +115,7 @@ public class StoryPlayer implements PlayController {
 		playerView.setDuration( mediaPlayer.getDuration() );
 		playerView.updateTime( cp );
 		playerState = PLAYER_STATE.STARTED;
-		playerView.updatePlayerState( playerState );
+		updatePlayerViewState();
 		if( timeTimerTask == null ) {
 			timeTimerTask = new TimeTimerTask();
 			new Thread( timeTimerTask ).start();
@@ -153,7 +154,7 @@ public class StoryPlayer implements PlayController {
 		}
 		if( prepareToPlay( uri ) ) {
 			playerState = PLAYER_STATE.PREPARED;
-			playerView.updatePlayerState( playerState );
+			updatePlayerViewState();
 		}
 	}
 
@@ -163,7 +164,7 @@ public class StoryPlayer implements PlayController {
 		playInfo.setCurrentPlaying( uri );
 		playInfo.setCurrentPlayingPosition( sp );
 		try {
-			playerView.setDataSource( uri );
+			updateDataSource( uri );
 		} catch (IllegalArgumentException | SecurityException
 				| IllegalStateException e) {
 			
@@ -192,7 +193,7 @@ public class StoryPlayer implements PlayController {
 		mediaPlayer.stop();
 		mediaPlayer.reset();
 		playerState = PLAYER_STATE.STOPPED;
-		playerView.updatePlayerState( playerState );
+		updatePlayerViewState();
 		stopTimeTimerTask();
 		updateTime( 0, 0 );
 	}
@@ -255,7 +256,7 @@ public class StoryPlayer implements PlayController {
 			case STARTED:
 				mediaPlayer.pause();
 				playerState = PLAYER_STATE.PAUSED;
-				playerView.updatePlayerState(playerState);
+				updatePlayerViewState();
 				timeTimerTask.state = TASK_STATE.PAUSE;
 				break;
 			case STOPPED:
@@ -274,7 +275,7 @@ public class StoryPlayer implements PlayController {
 	private boolean prepareToPlay(Uri currentPlaying) {
 		mediaPlayer.reset();
 		playerState = PLAYER_STATE.IDLE;
-		playerView.updatePlayerState( playerState );
+		updatePlayerViewState();
 		try {
 			mediaPlayer.setDataSource( context, currentPlaying );
 			mediaPlayer.prepareAsync();
@@ -289,6 +290,18 @@ public class StoryPlayer implements PlayController {
 		}
 		
 		return true;
+	}
+
+	private void updatePlayerViewState() {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
+		intent.putExtra( PlayerView.KEY_PLAYER_STATE, playerState.name() );
+		context.sendBroadcast(intent);
+	}
+	
+	private void updateDataSource( Uri uri ) {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_DATA_SOURCE );
+		intent.putExtra( PlayerView.KEY_DATA_SOURCE, uri );
+		context.sendBroadcast(intent);
 	}
 
 	@Override
