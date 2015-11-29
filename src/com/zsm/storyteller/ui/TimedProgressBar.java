@@ -32,7 +32,7 @@ public class TimedProgressBar extends LinearLayout {
 		init();
 	}
 
-	private void init() {
+	synchronized private void init() {
 		String infService = Context.LAYOUT_INFLATER_SERVICE;
 		LayoutInflater li
 			= (LayoutInflater)getContext().getSystemService( infService );
@@ -47,7 +47,7 @@ public class TimedProgressBar extends LinearLayout {
 		progressBar.setMax(duration);
 	}
 
-	public void updateTime(long currentPosition) {
+	synchronized public void updateTime(long currentPosition) {
 		progressBar.setProgress( (int) currentPosition );
 		textViewEllapse.setText( TextUtil.durationToText(currentPosition) );
 		textViewRemain.setText( TextUtil.durationToText(

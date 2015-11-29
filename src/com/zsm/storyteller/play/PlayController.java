@@ -1,17 +1,21 @@
 package com.zsm.storyteller.play;
 
-import com.zsm.storyteller.PlayInfo;
-import com.zsm.storyteller.play.StoryPlayer.PLAYER_STATE;
-
 import android.net.Uri;
 
+import com.zsm.storyteller.PlayInfo;
+
 public interface PlayController {
+	public enum PLAYER_STATE { 
+		IDLE, INITIALIZED, PREPARED, STARTED, PAUSED, STOPPED, PLAYBACKCOMPLETED }
+
 	public static final String ACTION_PLAYER_PLAY
 		= "com.zsm.storyteller.PLAYER.PLAY";
 	public static final String ACTION_PLAYER_PLAY_NEXT
 		= "com.zsm.storyteller.PLAYER.PLAY_NEXT";
 	public static final String ACTION_PLAYER_MAIN_ACTIVITY
 		= "com.zsm.storyteller.PLAYER.MAIN_ACTIVITY";
+	public static final String ACTION_PLAYER_EMPTY
+		= "com.zsm.storyteller.PLAYER.EMPTY_ACTION";
 
 	void selectOneToPlay(Uri uri, long startPosition);
 
@@ -27,7 +31,7 @@ public interface PlayController {
 
 	void seekTo(int progress);
 
-	PLAYER_STATE getState();
+	PlayController.PLAYER_STATE getState();
 
 	void pause(boolean updateView);
 
@@ -37,9 +41,7 @@ public interface PlayController {
 
 	void playPause();
 
-	void onDestory();
-
-	void setPlayerView(PlayerView pv);
+	void onDestroy();
 
 	void updatePlayInfo(PlayInfo playInfo);
 

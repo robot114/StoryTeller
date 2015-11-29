@@ -25,16 +25,18 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 	private LayoutInflater inflater;
 	private ExpandableListView listView;
 
-	MediaInfoListAdapter( Context context, PlayController player,
-						  ExpandableListView listView ) {
+	MediaInfoListAdapter( Context context, ExpandableListView listView ) {
 		
 		this.context = context;
-		this.player = player;
 		this.listView = listView;
 		
 		inflater
 			= (LayoutInflater) context
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+	}
+
+	public void setPlayer( PlayController player ) {
+		this.player = player;
 	}
 
 	public void setData( List<Uri> data ) {

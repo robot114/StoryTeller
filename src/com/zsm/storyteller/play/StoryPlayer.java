@@ -7,12 +7,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.widget.Toast;
 
 import com.zsm.log.Log;
+import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
@@ -29,7 +32,10 @@ public class StoryPlayer implements PlayController {
 		@Override
 		public void run() {
 			int currentPosition = mediaPlayer.getCurrentPosition();
-			updateTime( currentPosition, updateTimes++ );
+			updateTime( currentPosition, mediaPlayer.getDuration(), updateTimes++ );
+			if( playerState == PlayController.PLAYER_STATE.STARTED && !mediaPlayer.isPlaying() ) {
+				mediaPlayer.start();
+			}
 		}
 	};
 		
@@ -51,24 +57,33 @@ public class StoryPlayer implements PlayController {
 		}
 	}
 	
-	public enum PLAYER_STATE { 
-		IDLE, INITIALIZED, PREPARED, STARTED, PAUSED, STOPPED, PLAYBACKCOMPLETED };
-		
 	private static final int SAVING_POSITION_FACTOR = 4;
 	
 	private MediaPlayer mediaPlayer;
-	private PLAYER_STATE playerState = PLAYER_STATE.IDLE;
-	private PlayerView playerView;
+	private PlayController.PLAYER_STATE playerState = PlayController.PLAYER_STATE.IDLE;
 
 	private PlayInfo playInfo;
 	private TimeTimerTask timeTimerTask;
 	private Context context;
 	private Handler handler;
+
+	private boolean newStartFlag;
 	
 	public StoryPlayer( Context context ) {
 		this.context = context;
 		handler = new Handler();
 		mediaPlayer = new MediaPlayer();
+		mediaPlayer.setWakeMode( context, PowerManager.PARTIAL_WAKE_LOCK );
+		
+		mediaPlayer.setOnErrorListener( new OnErrorListener() {
+			@Override
+			public boolean onError(MediaPlayer mp, int what, int extra) {
+				Log.e( "Something is wrong.", mp, "what", what, "extra", extra,
+					   "newStartFlag", newStartFlag );
+				return newStartFlag;
+			}
+		} );
+		
 		mediaPlayer.setOnCompletionListener( new OnCompletionListener() {
 			@Override
 			public void onCompletion(MediaPlayer mp) {
@@ -82,17 +97,14 @@ public class StoryPlayer implements PlayController {
 				play();
 			}
 		} );
-	}
-
-	@Override
-	public void setPlayerView( PlayerView pv ) {
-		this.playerView = pv;
+		
+		newStartFlag = true;
 	}
 
 	@Override
 	public void start(boolean updateView) {
 		mediaPlayer.start();
-		playerState = PLAYER_STATE.STARTED;
+		playerState = PlayController.PLAYER_STATE.STARTED;
 		if( updateView ) {
 			updatePlayerViewState();
 		}
@@ -101,7 +113,7 @@ public class StoryPlayer implements PlayController {
 	@Override
 	public void pause(boolean updateView) {
 		mediaPlayer.pause();
-		playerState = PLAYER_STATE.PAUSED;
+		playerState = PlayController.PLAYER_STATE.PAUSED;
 		if( updateView ) {
 			updatePlayerViewState();
 		}
@@ -109,12 +121,11 @@ public class StoryPlayer implements PlayController {
 	
 	@SuppressLint("Assert")
 	private void play() {
-		int cp = (int) playInfo.getCurrentPlayingPosition();
+		int cp = (int) getPlayInfoInner().getCurrentPlayingPosition();
 		mediaPlayer.seekTo( cp );
 		mediaPlayer.start();
-		playerView.setDuration( mediaPlayer.getDuration() );
-		playerView.updateTime( cp );
-		playerState = PLAYER_STATE.STARTED;
+		updateTime( cp, mediaPlayer.getDuration(), 0 );
+		playerState = PlayController.PLAYER_STATE.STARTED;
 		updatePlayerViewState();
 		if( timeTimerTask == null ) {
 			timeTimerTask = new TimeTimerTask();
@@ -153,16 +164,16 @@ public class StoryPlayer implements PlayController {
 			return;
 		}
 		if( prepareToPlay( uri ) ) {
-			playerState = PLAYER_STATE.PREPARED;
+			playerState = PlayController.PLAYER_STATE.PREPARED;
 			updatePlayerViewState();
 		}
 	}
 
-	private boolean updatePlayerViewMedia(Uri uri, long startPosition) {
+	synchronized private boolean updatePlayerViewMedia(Uri uri, long startPosition) {
 		int headerLength = Preferences.getInstance().getSkipHeaderValue()*1000;
 		long sp = shouldSkipHeader(startPosition) ? headerLength : startPosition;
-		playInfo.setCurrentPlaying( uri );
-		playInfo.setCurrentPlayingPosition( sp );
+		getPlayInfoInner().setCurrentPlaying( uri );
+		getPlayInfoInner().setCurrentPlayingPosition( sp );
 		try {
 			updateDataSource( uri );
 		} catch (IllegalArgumentException | SecurityException
@@ -173,7 +184,8 @@ public class StoryPlayer implements PlayController {
 				 .show();
 			return false;
 		}
-		playerView.updateTime(sp);		
+		MediaInfo mi = new MediaInfo( context, uri );
+		updateTime((int)sp, mi.getDuration(), 0);		
 		return true;
 	}
 
@@ -186,29 +198,32 @@ public class StoryPlayer implements PlayController {
 
 	@Override
 	public void stop() {
-		if( playerState == PLAYER_STATE.STOPPED ) {
+		if( playerState == PlayController.PLAYER_STATE.STOPPED ) {
 			return;
 		}
 		
 		mediaPlayer.stop();
 		mediaPlayer.reset();
-		playerState = PLAYER_STATE.STOPPED;
+		playerState = PlayController.PLAYER_STATE.STOPPED;
 		updatePlayerViewState();
 		stopTimeTimerTask();
-		updateTime( 0, 0 );
+		updateTime( 0, 0, 0 );
 	}
 	
 	@Override
 	public void seekTo(int progress) {
 		mediaPlayer.seekTo(progress);
-		updateTime( progress, 0 );
+		updateTime( progress, mediaPlayer.getDuration(), 0 );
 	}
 
-	private void updateTime(int currentPosition, int times) {
+	private void updateTime(int currentPosition, int duration, int times) {
 		if( times % SAVING_POSITION_FACTOR == 0 ) {
-			playInfo.setCurrentPlayingPosition(currentPosition);
+			getPlayInfoInner().setCurrentPlayingPosition(currentPosition);
 		}
-		playerView.updateTime( currentPosition );
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_ELLAPSED_TIME );
+		intent.putExtra( PlayerView.KEY_ELLAPSED_TIME, currentPosition );
+		intent.putExtra( PlayerView.KEY_DURATION, duration );
+		context.sendBroadcast(intent);
 	}
 
 	private void stopTimeTimerTask() {
@@ -226,7 +241,7 @@ public class StoryPlayer implements PlayController {
 	
 	@Override
 	public void toNext() {
-		Uri uri = playInfo.nextOne();
+		Uri uri = getPlayInfoInner().nextOne();
 		if( uri != null ) {
 			selectOneToPlay(uri, 0);
 		} else {
@@ -236,7 +251,7 @@ public class StoryPlayer implements PlayController {
 	
 	@Override
 	public void toPrevious() {
-		Uri uri = playInfo.previousOne();
+		Uri uri = getPlayInfoInner().previousOne();
 		if( uri != null ) {
 			selectOneToPlay(uri, 0);
 		} else {
@@ -246,7 +261,7 @@ public class StoryPlayer implements PlayController {
 	
 	@Override
 	public void playPause() {
-		Uri currentPlaying = playInfo.refreshCurrentPlaying();
+		Uri currentPlaying = getPlayInfoInner().refreshCurrentPlaying();
 		if( currentPlaying == null ) {
 			Toast.makeText( context, R.string.openPlayFileFirst, Toast.LENGTH_LONG )
 				 .show();
@@ -255,9 +270,10 @@ public class StoryPlayer implements PlayController {
 		switch( playerState ) {
 			case STARTED:
 				mediaPlayer.pause();
-				playerState = PLAYER_STATE.PAUSED;
+				playerState = PlayController.PLAYER_STATE.PAUSED;
 				updatePlayerViewState();
 				timeTimerTask.state = TASK_STATE.PAUSE;
+				updateTime( mediaPlayer.getCurrentPosition(), mediaPlayer.getDuration(), 0 );
 				break;
 			case STOPPED:
 			case IDLE:
@@ -274,7 +290,7 @@ public class StoryPlayer implements PlayController {
 
 	private boolean prepareToPlay(Uri currentPlaying) {
 		mediaPlayer.reset();
-		playerState = PLAYER_STATE.IDLE;
+		playerState = PlayController.PLAYER_STATE.IDLE;
 		updatePlayerViewState();
 		try {
 			mediaPlayer.setDataSource( context, currentPlaying );
@@ -304,8 +320,14 @@ public class StoryPlayer implements PlayController {
 		context.sendBroadcast(intent);
 	}
 
+	private void updatePlayList( PlayInfo pi ) {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAY_INFO );
+		intent.putExtra(PlayerView.KEY_PLAY_INFO, pi);
+		context.sendBroadcast(intent);
+	}
+
 	@Override
-	public void onDestory() {
+	public void onDestroy() {
 		if( mediaPlayer != null ) {
 			stop();
 			mediaPlayer.release();
@@ -314,21 +336,21 @@ public class StoryPlayer implements PlayController {
 	
 	@Override
 	public boolean inPlayingState() {
-		return playerState == PLAYER_STATE.PAUSED 
-				|| playerState == PLAYER_STATE.STARTED
-				|| playerState == PLAYER_STATE.PREPARED;
+		return playerState == PlayController.PLAYER_STATE.PAUSED 
+				|| playerState == PlayController.PLAYER_STATE.STARTED
+				|| playerState == PlayController.PLAYER_STATE.PREPARED;
 	}
 
 	@Override
-	public PLAYER_STATE getState() {
+	public PlayController.PLAYER_STATE getState() {
 		return playerState;
 	}
 
 	@Override
-	public void updatePlayInfo(PlayInfo playInfo) {
-		this.playInfo = playInfo;
-		playerView.updatePlayList( 
-						playInfo.getPlayList(StoryTellerApp.EXTENSION, true) );
+	public void updatePlayInfo(PlayInfo pi) {
+		playInfo = pi;
+		playInfo.getPlayList(StoryTellerApp.EXTENSION, true);
+		updatePlayList( playInfo );
 		Uri currentPlaying = playInfo.refreshCurrentPlaying();
 		if( currentPlaying == null ) {
 			Toast.makeText( context, R.string.noMediaToPlay, Toast.LENGTH_LONG )
@@ -337,19 +359,23 @@ public class StoryPlayer implements PlayController {
 		}
 		
 		long startPosition = playInfo.getCurrentPlayingPosition();
-		if( Preferences.getInstance().autoStartPlaying() && playerState == PLAYER_STATE.STARTED ) {
-			selectOneToPlay( currentPlaying, startPosition );
-		} else {
-			updatePlayerViewMedia(currentPlaying, startPosition);
-		}
-		
-		Preferences.getInstance().savePlayListInfo( playInfo );
+		updatePlayerViewMedia(currentPlaying, startPosition);
+		updatePlayerViewState();
 	}
 
 	@Override
 	public PlayInfo getPlayInfo() {
-		playInfo.setCurrentPlayingPosition( mediaPlayer.getCurrentPosition() );
+		getPlayInfoInner()
+			.setCurrentPlayingPosition( mediaPlayer.getCurrentPosition() );
 		return playInfo;
 	}
 
+	private PlayInfo getPlayInfoInner() {
+		if( playInfo == null ) {
+			playInfo = Preferences.getInstance().readPlayListInfo();
+			playInfo.getPlayList( StoryTellerApp.EXTENSION, true );
+		}
+		
+		return playInfo;
+	}
 }

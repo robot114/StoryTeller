@@ -7,13 +7,16 @@
     <uses-sdk
         android:minSdkVersion="17"
         android:targetSdkVersion="24" />
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application
         android:allowBackup="true"
         android:icon="@drawable/player"
         android:label="@string/app_name"
         android:theme="@style/AppTheme"
-        android:name=".app.StoryTellerApp">
+        android:name=".app.StoryTellerApp"
+        android:killAfterRestore="false"
+        android:hardwareAccelerated="false">
         <activity
             android:name="com.zsm.storyteller.ui.MainActivity"
             android:label="@string/app_name"
@@ -29,7 +32,6 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_PLAYER_STATE"/>
-                <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_DURATION"/>
                 <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_ELLAPSED_TIME"/>
                 <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_DATA_SOURCE"/>
             </intent-filter>
@@ -38,13 +40,13 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/story_teller_appwidget_info" />
 		</receiver>
-        <receiver android:name=".play.PlayReceiver">
+        <service android:name=".play.PlayService" android:singleUser="true" android:stopWithTask="false">
             <intent-filter>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_NEXT"/>
                 <action android:name="com.zsm.storyteller.PLAYER.MAIN_ACTIVITY"/>
             </intent-filter>
-        </receiver>
+        </service>
     </application>
 
 </manifest>

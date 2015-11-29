@@ -17,26 +17,35 @@ public class MediaInfo {
 	
 	public MediaInfo( Context context, Uri uri ) {
 		metaRetriver = new MediaMetadataRetriever();
+		title = titleWithoutExt( uri.getLastPathSegment() );
 		try {
 			metaRetriver.setDataSource( context, uri );
 			title = getMetaData(MediaMetadataRetriever.METADATA_KEY_TITLE,
-								uri.getLastPathSegment());
+								title);
 		} catch( IllegalArgumentException | SecurityException  e) {
-			title = uri.getLastPathSegment();
-		}
-	}
-	
-	public MediaInfo( Context context, File file ) {
-		metaRetriver = new MediaMetadataRetriever();
-		try {
-			metaRetriver.setDataSource( context, Uri.fromFile(file) );
-			title = getMetaData(MediaMetadataRetriever.METADATA_KEY_TITLE,
-								file.getName() );
-		} catch( IllegalArgumentException | SecurityException  e) {
-			title = file.getName();
 		}
 	}
 
+	public MediaInfo( Context context, File file ) {
+		metaRetriver = new MediaMetadataRetriever();
+		title = titleWithoutExt( file.getName() );
+		try {
+			metaRetriver.setDataSource( context, Uri.fromFile(file) );
+			title = getMetaData(MediaMetadataRetriever.METADATA_KEY_TITLE,
+								title );
+		} catch( IllegalArgumentException | SecurityException  e) {
+		}
+	}
+
+	private String titleWithoutExt( String name ) {
+		int index = name.lastIndexOf( '.' );
+		if( index > 0 ) {
+			name = name.substring( 0, index);
+		}
+		
+		return name;
+	}
+	
 	public Bitmap getImage( int targetHeight ) {
 		byte[] pic = metaRetriver.getEmbeddedPicture();
 		Bitmap image = null;

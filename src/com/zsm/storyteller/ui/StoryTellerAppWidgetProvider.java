@@ -14,14 +14,16 @@ import android.widget.RemoteViews;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.play.PlayController;
+import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.play.PlayerView;
-import com.zsm.storyteller.play.StoryPlayer.PLAYER_STATE;
+import com.zsm.util.TextUtil;
 
 public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 					implements PlayerView {
 
 	private PlayerViewReceiver playerViewReceiver;
 	private RemoteViews remoteViews;
+	private boolean serviceStarted;
 
 	public StoryTellerAppWidgetProvider() {
 		playerViewReceiver = new PlayerViewReceiver( this );
@@ -31,7 +33,14 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager,
 						 int[] appWidgetIds) {
 		
-        addClickEvent(context, appWidgetManager, appWidgetIds,
+		if( !serviceStarted ) {
+			Intent intent = new Intent(context, PlayService.class);
+			intent.setAction( PlayController.ACTION_PLAYER_EMPTY );
+			context.startService(intent);
+			serviceStarted = true;
+		}
+		
+		addClickEvent(context, appWidgetManager, appWidgetIds,
         			  PlayController.ACTION_PLAYER_PLAY,
         			  R.id.imageViewWidgetPlay);
         addClickEvent(context, appWidgetManager, appWidgetIds,
@@ -39,7 +48,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
         			  R.id.imageViewWidgetNext);
         addClickEvent(context, appWidgetManager, appWidgetIds,
   			  		  PlayController.ACTION_PLAYER_MAIN_ACTIVITY,
-  			  		  R.id.layoutInfo);
+  			  		  R.id.layoutMainWidget);
         
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
 	}
@@ -51,8 +60,8 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		// Perform this loop procedure for each App Widget that belongs to this provider
         Intent intent = new Intent(action);
         PendingIntent pi
-        	= PendingIntent.getBroadcast(context, 0, intent,
-        								 PendingIntent.FLAG_UPDATE_CURRENT);
+			= PendingIntent.getService(context, 0, intent,
+										 PendingIntent.FLAG_UPDATE_CURRENT);
 
         RemoteViews views
         	= new RemoteViews(context.getPackageName(), R.layout.main_widget);
@@ -81,19 +90,15 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	}
 
 	@Override
-	public void setDuration(int duration) {
-		// TODO Auto-generated method stub
-		
+	public void updateTime(int curretPosition, int duration) {
+		remoteViews
+			.setTextViewText( 
+				R.id.textViewTimeRemain,
+				TextUtil.durationToText(duration - curretPosition) );
 	}
 
 	@Override
-	public void updateTime(long curretPosition) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void updatePlayerState(PLAYER_STATE state) {
+	public void updatePlayerState(PlayController.PLAYER_STATE state) {
     	switch( state ) {
 			case STARTED:
 				remoteViews.setImageViewResource( R.id.imageViewWidgetPlay, R.drawable.widget_pause);
@@ -119,5 +124,4 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		// TODO Auto-generated method stub
 		
 	}
-
 }

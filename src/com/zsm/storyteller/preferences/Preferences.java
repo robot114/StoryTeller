@@ -65,7 +65,7 @@ public class Preferences {
 		pi.toPreferences(preferences);
 	}
 	
-	public PlayInfo readPlayListInf() {
+	public PlayInfo readPlayListInfo() {
 		return PlayInfo.fromPreferences(preferences);
 	}
 	

@@ -102,6 +102,8 @@ class MediaInfoView extends LinearLayout {
 		textViewAlbum.setText( mediaInfo.getAlbum() );
 		textViewArtist.setText( mediaInfo.getArtist() );
 		textViewDuration.setText( mediaInfo.getDurationText() );
+		
+		duration = mediaInfo.getDuration();
 	}
 
 	private int getTotalHeight( TextView ... vs ) {

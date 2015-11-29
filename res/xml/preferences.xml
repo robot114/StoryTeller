@@ -10,6 +10,7 @@
             android:key="AUTO_START_PLAYING"
 			android:enabled="true"
 			android:summaryOff="@string/autoStartOff"
-			android:title="@string/autoStartTitle"/>
+			android:title="@string/autoStartTitle"
+			android:persistent="true"/>
     </PreferenceCategory>
 </PreferenceScreen>

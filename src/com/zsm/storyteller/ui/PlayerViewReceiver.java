@@ -6,8 +6,9 @@ import android.content.IntentFilter;
 import android.net.Uri;
 
 import com.zsm.log.Log;
+import com.zsm.storyteller.PlayInfo;
+import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayerView;
-import com.zsm.storyteller.play.StoryPlayer.PLAYER_STATE;
 
 public class PlayerViewReceiver {
 
@@ -26,14 +27,13 @@ public class PlayerViewReceiver {
 	}
 
 	public boolean onReceive(Context context, Intent intent) {
-		Log.d(intent);
 		switch( intent.getAction() ) {
 			case PlayerView.ACTION_UPDATE_PLAYER_STATE:
 				String stateStr
 					= intent.getStringExtra( PlayerView.KEY_PLAYER_STATE );
-				PLAYER_STATE state; 
+				PlayController.PLAYER_STATE state; 
 				try {
-					state = PLAYER_STATE.valueOf( stateStr );
+					state = PlayController.PLAYER_STATE.valueOf( stateStr );
 				} catch ( Exception e ) {
 					Log.e( e, "Invalid state", stateStr );
 					break;
@@ -45,6 +45,16 @@ public class PlayerViewReceiver {
 				if( uri != null ) {
 					view.setDataSource(context, uri);
 				}
+				break;
+			case PlayerView.ACTION_UPDATE_ELLAPSED_TIME:
+				int time = intent.getIntExtra(PlayerView.KEY_ELLAPSED_TIME, 0);
+				int duration = intent.getIntExtra(PlayerView.KEY_DURATION, 0);
+				view.updateTime(time, duration);
+				break;
+			case PlayerView.ACTION_UPDATE_PLAY_INFO:
+				PlayInfo pi = intent.getParcelableExtra( PlayerView.KEY_PLAY_INFO );
+				Log.d(pi);
+				view.updatePlayList( pi.getCurrentPlayList() );
 				break;
 			default:
 				Log.d( "Unsupported action and type", intent.getAction() );

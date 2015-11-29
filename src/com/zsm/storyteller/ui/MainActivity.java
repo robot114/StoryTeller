@@ -3,6 +3,8 @@ package com.zsm.storyteller.ui;
 import java.util.List;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +12,8 @@ import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v7.app.NotificationCompat;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,17 +26,19 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
+import com.zsm.log.Log;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
+import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayerView;
-import com.zsm.storyteller.play.StoryPlayer;
-import com.zsm.storyteller.play.StoryPlayer.PLAYER_STATE;
 import com.zsm.storyteller.preferences.Preferences;
 
 public class MainActivity extends Activity
 				implements PlayerView, OnChildClickListener {
 
+	private static final int NOTIFICATION_ID = 0;
+	
 	private ImageView playPause;
 	private TextView playingText;
 	private ExpandableListView playListView;
@@ -52,15 +58,12 @@ public class MainActivity extends Activity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		
-		player = ((StoryTellerApp)getApplication()).getPlayer();
-		player.setPlayerView(this);
-		
+
 		playPause = (ImageView)findViewById( R.id.imageViewPlay );
 		playingText = (TextView)findViewById( R.id.textViewPlayingFile );
 		
 		playListView = (ExpandableListView)findViewById( R.id.listPlayList );
-		playListAdapter = new MediaInfoListAdapter( this, player, playListView );
+		playListAdapter = new MediaInfoListAdapter( this, playListView );
 		playListView.setAdapter(playListAdapter);
 		playListView.setOnChildClickListener( this );
 		playListView.setOnGroupClickListener(new OnGroupClickListener() {
@@ -98,7 +101,7 @@ public class MainActivity extends Activity
 
 			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
-				if ( player.getState() == PLAYER_STATE.STARTED ) {
+				if ( player.getState() == PlayController.PLAYER_STATE.STARTED ) {
 					player.pause( false );
 					trackingDragging = true;
 				}
@@ -114,6 +117,45 @@ public class MainActivity extends Activity
 			
 		} );
 		
+		registerPlayerViewReceiver();
+		
+		new Thread( new Runnable() {
+			@Override
+			public void run() {
+				StoryTellerApp storyTellerApp = (StoryTellerApp)getApplication();
+				player = storyTellerApp.getPlayer();
+				Log.d(player);
+				player.updatePlayInfo( Preferences.getInstance().readPlayListInfo() );
+				playListAdapter.setPlayer(player);
+				if( player.getState() == PlayController.PLAYER_STATE.IDLE 
+					&& Preferences.getInstance().autoStartPlaying() ) {
+					
+					player.playPause();
+				}
+			}
+		}, "PlayerInit" ).start();
+	}
+
+	private Notification buildNotification() {
+		Context applicationContext = getApplicationContext();
+		PendingIntent pi
+		= PendingIntent.getActivity(applicationContext, 0,
+		                			new Intent(applicationContext, MainActivity.class),
+		                			PendingIntent.FLAG_UPDATE_CURRENT);
+		NotificationCompat.Builder builder
+			= new NotificationCompat.Builder( applicationContext );
+		builder.setSmallIcon( R.drawable.player )
+			   .setContentTitle( applicationContext.getText( R.string.app_name ) )
+			   .setContentText( "" )
+			   .setContentIntent(pi)
+			   .setStyle( new NotificationCompat.MediaStyle() );
+		Notification nf = builder.build();
+		nf.flags |= Notification.FLAG_ONGOING_EVENT;
+		
+		return nf;
+	}
+
+	private void registerPlayerViewReceiver() {
 		final PlayerViewReceiver pvr = new PlayerViewReceiver(this);
 		
 		receiver = new BroadcastReceiver() {
@@ -127,12 +169,29 @@ public class MainActivity extends Activity
 		registerReceiver(receiver, filter);
 		filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_PLAYER_STATE);
 		registerReceiver(receiver, filter);
-		
-		player.updatePlayInfo( Preferences.getInstance().readPlayListInf() );
+		filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_ELLAPSED_TIME);
+		registerReceiver(receiver, filter);
+		filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_PLAY_INFO);
+		registerReceiver(receiver, filter);
 	}
 	
 	@Override
+	protected void onResume() {
+		super.onResume();
+		NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
+	}
+
+	@Override
+	protected void onPause() {
+		Notification notification = buildNotification();
+	    NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notification);
+//		startForeground(NOTIFICATION_ID, notification);
+		super.onPause();
+	}
+
+	@Override
 	protected void onDestroy() {
+		Log.d( player.getState() );
 		Preferences.getInstance().savePlayListInfo( player.getPlayInfo() );
 		unregisterReceiver(receiver);
 		super.onDestroy();
@@ -152,11 +211,11 @@ public class MainActivity extends Activity
 	}
 	
 	public void onOpenOne( View v ) {
-		((StoryTellerApp)getApplication()).getPlayFileHandler().openOne(this);
+		((StoryTellerApp)getApplication()).getPlayFileHandler().openOne(this, player);
 	}
 	
 	public void onOpenFolder( View v ) {
-		((StoryTellerApp)getApplication()).getPlayFileHandler().openFolder( this );
+		((StoryTellerApp)getApplication()).getPlayFileHandler().openFolder( this, player );
 	}
 	
 	public void onPlayPause( View v ) {
@@ -200,17 +259,12 @@ public class MainActivity extends Activity
 	}
 
 	@Override
-	public void setDuration(int duration) {
-		progressBar.setDuration(duration);
+	public void updateTime(int currentPosition, int duration) {
+		progressBar.updateTime( currentPosition );
 	}
 
 	@Override
-	public void updateTime(long currentPosition) {
-		progressBar.updateTime( (int) currentPosition );
-	}
-
-	@Override
-	public void updatePlayerState(StoryPlayer.PLAYER_STATE state) {
+	public void updatePlayerState(PlayController.PLAYER_STATE state) {
 		switch( state ) {
 			case STARTED:
 				playPause.setImageDrawable(pauseIcon);
