@@ -20,8 +20,9 @@ import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.preferences.Preferences;
+import com.zsm.storyteller.ui.PlayerView;
 
-public class StoryPlayer implements PlayController {
+class StoryPlayer implements PlayController {
 	
 	private enum TASK_STATE { INIT, RUNNING, PAUSE, STOP };
 	
@@ -68,7 +69,7 @@ public class StoryPlayer implements PlayController {
 	private Handler handler;
 
 	private boolean newStartFlag;
-	
+
 	public StoryPlayer( Context context ) {
 		this.context = context;
 		handler = new Handler();
@@ -98,6 +99,7 @@ public class StoryPlayer implements PlayController {
 			}
 		} );
 		
+		notifyStateChanged();
 		newStartFlag = true;
 	}
 
@@ -106,7 +108,7 @@ public class StoryPlayer implements PlayController {
 		mediaPlayer.start();
 		playerState = PlayController.PLAYER_STATE.STARTED;
 		if( updateView ) {
-			updatePlayerViewState();
+			notifyStateChanged();
 		}
 	}
 
@@ -115,7 +117,7 @@ public class StoryPlayer implements PlayController {
 		mediaPlayer.pause();
 		playerState = PlayController.PLAYER_STATE.PAUSED;
 		if( updateView ) {
-			updatePlayerViewState();
+			notifyStateChanged();
 		}
 	}
 	
@@ -126,7 +128,7 @@ public class StoryPlayer implements PlayController {
 		mediaPlayer.start();
 		updateTime( cp, mediaPlayer.getDuration(), 0 );
 		playerState = PlayController.PLAYER_STATE.STARTED;
-		updatePlayerViewState();
+		notifyStateChanged();
 		if( timeTimerTask == null ) {
 			timeTimerTask = new TimeTimerTask();
 			new Thread( timeTimerTask ).start();
@@ -160,33 +162,21 @@ public class StoryPlayer implements PlayController {
 	@Override
 	public void selectOneToPlay(Uri uri, long startPosition ) {
 		stopTimeTimerTask();
-		if( !updatePlayerViewMedia(uri, startPosition) ) {
-			return;
-		}
+		updatePlayerViewMedia(uri, startPosition);
 		if( prepareToPlay( uri ) ) {
 			playerState = PlayController.PLAYER_STATE.PREPARED;
-			updatePlayerViewState();
+			notifyStateChanged();
 		}
 	}
 
-	synchronized private boolean updatePlayerViewMedia(Uri uri, long startPosition) {
+	synchronized private void updatePlayerViewMedia(Uri uri, long startPosition) {
 		int headerLength = Preferences.getInstance().getSkipHeaderValue()*1000;
 		long sp = shouldSkipHeader(startPosition) ? headerLength : startPosition;
 		getPlayInfoInner().setCurrentPlaying( uri );
 		getPlayInfoInner().setCurrentPlayingPosition( sp );
-		try {
-			updateDataSource( uri );
-		} catch (IllegalArgumentException | SecurityException
-				| IllegalStateException e) {
-			
-			Log.e( e, "Cannot make the file to be played: ", uri );
-			Toast.makeText( context, R.string.openFileFailed, Toast.LENGTH_LONG )
-				 .show();
-			return false;
-		}
-		MediaInfo mi = new MediaInfo( context, uri );
-		updateTime((int)sp, mi.getDuration(), 0);		
-		return true;
+		updateDataSource( uri );
+		MediaInfo currentMediaInfo = new MediaInfo( context, uri );
+		updateTime((int)sp, currentMediaInfo.getDuration(), 0);		
 	}
 
 	private boolean shouldSkipHeader(long startPosition) {
@@ -205,7 +195,7 @@ public class StoryPlayer implements PlayController {
 		mediaPlayer.stop();
 		mediaPlayer.reset();
 		playerState = PlayController.PLAYER_STATE.STOPPED;
-		updatePlayerViewState();
+		notifyStateChanged();
 		stopTimeTimerTask();
 		updateTime( 0, 0, 0 );
 	}
@@ -216,6 +206,12 @@ public class StoryPlayer implements PlayController {
 		updateTime( progress, mediaPlayer.getDuration(), 0 );
 	}
 
+	private void notifyStateChanged() {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
+		intent.putExtra( PlayerView.KEY_PLAYER_STATE, playerState.name() );
+		context.sendBroadcast(intent);
+	}
+	
 	private void updateTime(int currentPosition, int duration, int times) {
 		if( times % SAVING_POSITION_FACTOR == 0 ) {
 			getPlayInfoInner().setCurrentPlayingPosition(currentPosition);
@@ -271,7 +267,7 @@ public class StoryPlayer implements PlayController {
 			case STARTED:
 				mediaPlayer.pause();
 				playerState = PlayController.PLAYER_STATE.PAUSED;
-				updatePlayerViewState();
+				notifyStateChanged();
 				timeTimerTask.state = TASK_STATE.PAUSE;
 				updateTime( mediaPlayer.getCurrentPosition(), mediaPlayer.getDuration(), 0 );
 				break;
@@ -291,7 +287,7 @@ public class StoryPlayer implements PlayController {
 	private boolean prepareToPlay(Uri currentPlaying) {
 		mediaPlayer.reset();
 		playerState = PlayController.PLAYER_STATE.IDLE;
-		updatePlayerViewState();
+		notifyStateChanged();
 		try {
 			mediaPlayer.setDataSource( context, currentPlaying );
 			mediaPlayer.prepareAsync();
@@ -308,12 +304,6 @@ public class StoryPlayer implements PlayController {
 		return true;
 	}
 
-	private void updatePlayerViewState() {
-		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
-		intent.putExtra( PlayerView.KEY_PLAYER_STATE, playerState.name() );
-		context.sendBroadcast(intent);
-	}
-	
 	private void updateDataSource( Uri uri ) {
 		Intent intent = new Intent( PlayerView.ACTION_UPDATE_DATA_SOURCE );
 		intent.putExtra( PlayerView.KEY_DATA_SOURCE, uri );
@@ -329,7 +319,8 @@ public class StoryPlayer implements PlayController {
 	@Override
 	public void onDestroy() {
 		if( mediaPlayer != null ) {
-			stop();
+			pause( true );
+			stopTimeTimerTask();
 			mediaPlayer.release();
 		}
 	}
@@ -347,7 +338,7 @@ public class StoryPlayer implements PlayController {
 	}
 
 	@Override
-	public void updatePlayInfo(PlayInfo pi) {
+	public void setPlayInfo(PlayInfo pi) {
 		playInfo = pi;
 		playInfo.getPlayList(StoryTellerApp.EXTENSION, true);
 		updatePlayList( playInfo );
@@ -360,7 +351,7 @@ public class StoryPlayer implements PlayController {
 		
 		long startPosition = playInfo.getCurrentPlayingPosition();
 		updatePlayerViewMedia(currentPlaying, startPosition);
-		updatePlayerViewState();
+		notifyStateChanged();
 	}
 
 	@Override

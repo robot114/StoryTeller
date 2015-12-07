@@ -11,6 +11,6 @@
 			android:enabled="true"
 			android:summaryOff="@string/autoStartOff"
 			android:title="@string/autoStartTitle"
-			android:persistent="true"/>
+			android:persistent="true" android:defaultValue="true"/>
     </PreferenceCategory>
 </PreferenceScreen>

@@ -32,7 +32,7 @@ public class PlayFileHandler implements OnHandleFileListener {
 		}
 		PlayInfo pi = new PlayInfo( lt, Uri.fromFile(f), null, 0 );
 		Preferences.getInstance().savePlayListInfo(pi);
-		player.updatePlayInfo( pi );
+		player.setPlayInfo( pi );
 		if( Preferences.getInstance().autoStartPlaying() ) {
 			player.playPause();
 		}

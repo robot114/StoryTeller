@@ -32,5 +32,6 @@
     <string name="autoStartOn">Start playing when the app starts</string>
     <string name="autoStartOff">Do not start playing when the app starts</string>
     <string name="autoStartTitle">Start playing automatically</string>
+    <string name="audioFocusPlayNotAllowed">The player is not allowed to play right now</string>
 
 </resources>

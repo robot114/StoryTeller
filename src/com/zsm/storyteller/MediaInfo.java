@@ -2,37 +2,40 @@ package com.zsm.storyteller;
 
 import java.io.File;
 
-import com.zsm.util.TextUtil;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 
+import com.zsm.util.TextUtil;
+
 public class MediaInfo {
 
 	private MediaMetadataRetriever metaRetriver;
 	private String title;
+	private String album;
+	private String artist;
+	private int duration = -1;
+	private Bitmap image;
+	private int imageHeight;
 	
 	public MediaInfo( Context context, Uri uri ) {
+		init(context, uri);
+	}
+
+	public MediaInfo( Context context, File file ) {
+		init( context, Uri.fromFile(file) );
+	}
+
+	private void init(Context context, Uri uri) {
+		String name = uri.getLastPathSegment();
 		metaRetriver = new MediaMetadataRetriever();
-		title = titleWithoutExt( uri.getLastPathSegment() );
+		title = titleWithoutExt( name );
 		try {
 			metaRetriver.setDataSource( context, uri );
 			title = getMetaData(MediaMetadataRetriever.METADATA_KEY_TITLE,
 								title);
-		} catch( IllegalArgumentException | SecurityException  e) {
-		}
-	}
-
-	public MediaInfo( Context context, File file ) {
-		metaRetriver = new MediaMetadataRetriever();
-		title = titleWithoutExt( file.getName() );
-		try {
-			metaRetriver.setDataSource( context, Uri.fromFile(file) );
-			title = getMetaData(MediaMetadataRetriever.METADATA_KEY_TITLE,
-								title );
 		} catch( IllegalArgumentException | SecurityException  e) {
 		}
 	}
@@ -47,17 +50,20 @@ public class MediaInfo {
 	}
 	
 	public Bitmap getImage( int targetHeight ) {
-		byte[] pic = metaRetriver.getEmbeddedPicture();
-		Bitmap image = null;
-		if( pic != null ) {
-			BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
-			bmpOptions.inJustDecodeBounds = true;
-			bmpOptions.inSampleSize = 1;
-			BitmapFactory.decodeByteArray(pic, 0, pic.length, bmpOptions );
-			int height = bmpOptions.outHeight;
-			bmpOptions.inJustDecodeBounds = false;
-			bmpOptions.inSampleSize = height/targetHeight;
-			image = BitmapFactory.decodeByteArray(pic, 0, pic.length, bmpOptions );
+		if( image == null || this.imageHeight != targetHeight ) {
+			image = null;
+			this.imageHeight = targetHeight;
+			byte[] pic = metaRetriver.getEmbeddedPicture();
+			if( pic != null ) {
+				BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
+				bmpOptions.inJustDecodeBounds = true;
+				bmpOptions.inSampleSize = 1;
+				BitmapFactory.decodeByteArray(pic, 0, pic.length, bmpOptions );
+				int height = bmpOptions.outHeight;
+				bmpOptions.inJustDecodeBounds = false;
+				bmpOptions.inSampleSize = height/targetHeight;
+				image = BitmapFactory.decodeByteArray(pic, 0, pic.length, bmpOptions );
+			}
 		}
 		
 		return image;
@@ -68,24 +74,34 @@ public class MediaInfo {
 	}
 
 	public String getAlbum() {
-		return getMetaData( MediaMetadataRetriever.METADATA_KEY_ALBUM );
+		if( album == null ) {
+			album = getMetaData( MediaMetadataRetriever.METADATA_KEY_ALBUM );
+		}
+		return album;
 	}
 	
 	public String getArtist() {
-		return getMetaData( MediaMetadataRetriever.METADATA_KEY_ARTIST );
+		if( artist == null ) {
+			artist = getMetaData( MediaMetadataRetriever.METADATA_KEY_ARTIST );
+		}
+		return artist;
 	}
 	
 	public int getDuration() {
-		String durationStr
-			= getMetaData( MediaMetadataRetriever.METADATA_KEY_DURATION, null );
-		if( durationStr != null ) {
-	        try {
-				return Integer.parseInt(durationStr);
-	        } catch ( NumberFormatException e ) {
-	        }
+		if( duration < 0 ) {
+			String durationStr
+				= getMetaData( MediaMetadataRetriever.METADATA_KEY_DURATION,
+							   null );
+			
+			if( durationStr != null ) {
+		        try {
+					duration = Integer.parseInt(durationStr);
+		        } catch ( NumberFormatException e ) {
+		        }
+			}
 		}
 		
-		return -1;
+		return duration;
 	}
 	
 	public StringBuilder getDurationText() {

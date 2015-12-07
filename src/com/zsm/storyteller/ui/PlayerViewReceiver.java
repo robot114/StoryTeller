@@ -2,13 +2,11 @@ package com.zsm.storyteller.ui;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.net.Uri;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.play.PlayController;
-import com.zsm.storyteller.play.PlayerView;
 
 public class PlayerViewReceiver {
 
@@ -19,13 +17,6 @@ public class PlayerViewReceiver {
 		this.view = view;
 	}
 	
-	IntentFilter buildIntentFilter( String action ) {
-		Log.d( "Register the BroadcastReceiver.", "PlayerView", view, "Receiver", this );
-		IntentFilter filter = new IntentFilter();
-		filter.addAction( action );
-		return filter;
-	}
-
 	public boolean onReceive(Context context, Intent intent) {
 		switch( intent.getAction() ) {
 			case PlayerView.ACTION_UPDATE_PLAYER_STATE:

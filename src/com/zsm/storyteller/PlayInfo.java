@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -69,11 +70,25 @@ public class PlayInfo implements Parcelable {
 	}
 	
 	public void toPreferences( SharedPreferences p ) {
-		p.edit().putString( Preferences.KEY_LIST_TYPE, listType.name() )
-				.putString( Preferences.KEY_LIST_INFO, listInfo.toString() )
-				.putString( Preferences.KEY_CURRENT_PLAYING, currentPlaying.toString() )
-				.putLong( Preferences.KEY_CURRENT_POSITION, currentPlayingPosition )
-				.apply();
+		Editor editor
+			= p.edit().putString( Preferences.KEY_LIST_TYPE, listType.name() );
+		if( listInfo != null ) {
+			editor.putString( Preferences.KEY_LIST_INFO, listInfo.toString() );
+		} else {
+			editor.remove( Preferences.KEY_LIST_INFO );
+		}
+		
+		if( currentPlaying != null ) {
+			editor.putString( Preferences.KEY_CURRENT_PLAYING,
+							  currentPlaying.toString() )
+				  .putLong( Preferences.KEY_CURRENT_POSITION,
+						    currentPlayingPosition );
+		} else {
+			editor.remove( Preferences.KEY_CURRENT_PLAYING )
+				  .remove( Preferences.KEY_CURRENT_POSITION );
+		}
+		
+		editor.apply();
 	}
 	
 	public static PlayInfo fromPreferences( SharedPreferences p ) {
@@ -241,25 +256,25 @@ public class PlayInfo implements Parcelable {
     public static final Parcelable.Creator<PlayInfo> CREATOR
 	    = new Parcelable.Creator<PlayInfo>() {
 	
-	@SuppressWarnings("unchecked")
-	@Override
-	public PlayInfo createFromParcel(Parcel in) {
-		PlayInfo pi = new PlayInfo();
+		@SuppressWarnings("unchecked")
+		@Override
+		public PlayInfo createFromParcel(Parcel in) {
+			PlayInfo pi = new PlayInfo();
+			
+			pi.listType = LIST_TYPE.valueOf( in.readString() );
+			pi.listInfo = (Uri)in.readParcelable(null);
+			pi.currentPlaying = (Uri)in.readParcelable(null);
+			pi.playList = (List<Uri>)in.readArrayList(null);
+			pi.currentPlayingIndex = in.readInt();
+			pi.currentPlayingPosition = in.readLong();
+			
+		    return pi;
+		}
 		
-		pi.listType = LIST_TYPE.valueOf( in.readString() );
-		pi.listInfo = (Uri)in.readParcelable(null);
-		pi.currentPlaying = (Uri)in.readParcelable(null);
-		pi.playList = (List<Uri>)in.readArrayList(null);
-		pi.currentPlayingIndex = in.readInt();
-		pi.currentPlayingPosition = in.readLong();
-		
-	    return pi;
-	}
-	
-	// We just need to copy this and change the type to match our class.
-	@Override
-	public PlayInfo[] newArray(int size) {
-	    return new PlayInfo[size];
-	}
+		// We just need to copy this and change the type to match our class.
+		@Override
+		public PlayInfo[] newArray(int size) {
+		    return new PlayInfo[size];
+		}
 	};
 }

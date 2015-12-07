@@ -15,7 +15,6 @@ import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayService;
-import com.zsm.storyteller.play.PlayerView;
 import com.zsm.util.TextUtil;
 
 public class StoryTellerAppWidgetProvider extends AppWidgetProvider
@@ -41,7 +40,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		}
 		
 		addClickEvent(context, appWidgetManager, appWidgetIds,
-        			  PlayController.ACTION_PLAYER_PLAY,
+        			  PlayController.ACTION_PLAYER_PLAY_PAUSE,
         			  R.id.imageViewWidgetPlay);
         addClickEvent(context, appWidgetManager, appWidgetIds,
         			  PlayController.ACTION_PLAYER_PLAY_NEXT,
@@ -101,12 +100,15 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	public void updatePlayerState(PlayController.PLAYER_STATE state) {
     	switch( state ) {
 			case STARTED:
-				remoteViews.setImageViewResource( R.id.imageViewWidgetPlay, R.drawable.widget_pause);
+				remoteViews.setImageViewResource( R.id.imageViewWidgetPlay,
+												  R.drawable.widget_pause);
 				break;
+			case IDLE:
 			case PREPARED:
 			case STOPPED:
 			case PAUSED:
-				remoteViews.setImageViewResource( R.id.imageViewWidgetPlay, R.drawable.widget_play);
+				remoteViews.setImageViewResource( R.id.imageViewWidgetPlay,
+												  R.drawable.widget_play);
 				break;
 			default:
 				break;

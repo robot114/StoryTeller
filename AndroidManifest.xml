@@ -42,11 +42,20 @@
 		</receiver>
         <service android:name=".play.PlayService" android:singleUser="true" android:stopWithTask="false">
             <intent-filter>
+                <action android:name="com.zsm.storyteller.PLAYER.PLAY_PAUSE"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY"/>
+                <action android:name="com.zsm.storyteller.PLAYER.PAUSE"/>
+                <action android:name="com.zsm.storyteller.PLAYER.STOP"/>
+                <action android:name="com.zsm.storyteller.PLAYER.PLAY_PREVIOUS"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_NEXT"/>
                 <action android:name="com.zsm.storyteller.PLAYER.MAIN_ACTIVITY"/>
-            </intent-filter>
+                </intent-filter>
         </service>
+        <receiver android:name=".play.PlayControllerReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

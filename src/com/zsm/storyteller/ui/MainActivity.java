@@ -4,7 +4,6 @@ import java.util.List;
 
 import android.app.Activity;
 import android.app.Notification;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -12,8 +11,8 @@ import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.v4.app.NotificationManagerCompat;
-import android.support.v7.app.NotificationCompat;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -30,15 +29,12 @@ import com.zsm.log.Log;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
-import com.zsm.storyteller.play.PlayerView;
+import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.preferences.Preferences;
 
 public class MainActivity extends Activity
 				implements PlayerView, OnChildClickListener {
 
-	private static final int NOTIFICATION_ID = 0;
-	
 	private ImageView playPause;
 	private TextView playingText;
 	private ExpandableListView playListView;
@@ -94,7 +90,7 @@ public class MainActivity extends Activity
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
 										  boolean fromUser) {
-				if (fromUser && inPlayingState() ) {
+				if (fromUser ) {
 					player.seekTo(progress);
 		        }
 			}
@@ -125,7 +121,8 @@ public class MainActivity extends Activity
 				StoryTellerApp storyTellerApp = (StoryTellerApp)getApplication();
 				player = storyTellerApp.getPlayer();
 				Log.d(player);
-				player.updatePlayInfo( Preferences.getInstance().readPlayListInfo() );
+				Looper.prepare();
+				player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
 				playListAdapter.setPlayer(player);
 				if( player.getState() == PlayController.PLAYER_STATE.IDLE 
 					&& Preferences.getInstance().autoStartPlaying() ) {
@@ -134,25 +131,6 @@ public class MainActivity extends Activity
 				}
 			}
 		}, "PlayerInit" ).start();
-	}
-
-	private Notification buildNotification() {
-		Context applicationContext = getApplicationContext();
-		PendingIntent pi
-		= PendingIntent.getActivity(applicationContext, 0,
-		                			new Intent(applicationContext, MainActivity.class),
-		                			PendingIntent.FLAG_UPDATE_CURRENT);
-		NotificationCompat.Builder builder
-			= new NotificationCompat.Builder( applicationContext );
-		builder.setSmallIcon( R.drawable.player )
-			   .setContentTitle( applicationContext.getText( R.string.app_name ) )
-			   .setContentText( "" )
-			   .setContentIntent(pi)
-			   .setStyle( new NotificationCompat.MediaStyle() );
-		Notification nf = builder.build();
-		nf.flags |= Notification.FLAG_ONGOING_EVENT;
-		
-		return nf;
 	}
 
 	private void registerPlayerViewReceiver() {
@@ -165,40 +143,39 @@ public class MainActivity extends Activity
 			}
 		};
 		
-		IntentFilter filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_DATA_SOURCE);
+		IntentFilter filter = new IntentFilter(PlayerView.ACTION_UPDATE_DATA_SOURCE);
 		registerReceiver(receiver, filter);
-		filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_PLAYER_STATE);
+		filter = new IntentFilter(PlayerView.ACTION_UPDATE_PLAYER_STATE);
 		registerReceiver(receiver, filter);
-		filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_ELLAPSED_TIME);
+		filter = new IntentFilter(PlayerView.ACTION_UPDATE_ELLAPSED_TIME);
 		registerReceiver(receiver, filter);
-		filter = pvr.buildIntentFilter(PlayerView.ACTION_UPDATE_PLAY_INFO);
+		filter = new IntentFilter(PlayerView.ACTION_UPDATE_PLAY_INFO);
 		registerReceiver(receiver, filter);
 	}
 	
 	@Override
 	protected void onResume() {
 		super.onResume();
-		NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
+		NotificationManagerCompat.from(this).cancel(PlayService.NOTIFICATION_ID);
 	}
 
 	@Override
 	protected void onPause() {
-		Notification notification = buildNotification();
-	    NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notification);
-//		startForeground(NOTIFICATION_ID, notification);
+		if( player != null && player.getPlayInfo() != null ) {
+			Notification notification
+				= PlayService.buildNotification( this, player.getPlayInfo() );
+		    NotificationManagerCompat
+		    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
+			
+		}
 		super.onPause();
 	}
 
 	@Override
 	protected void onDestroy() {
-		Log.d( player.getState() );
 		Preferences.getInstance().savePlayListInfo( player.getPlayInfo() );
 		unregisterReceiver(receiver);
 		super.onDestroy();
-	}
-
-	private boolean inPlayingState() {
-		return player.inPlayingState();
 	}
 
 	@Override
@@ -292,4 +269,5 @@ public class MainActivity extends Activity
 		playListAdapter.setData( playList );
 		playListAdapter.notifyDataSetChanged();
 	}
+	
 }
