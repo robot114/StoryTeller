@@ -38,8 +38,16 @@
             android:id="@+id/imageViewWidgetPlay"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_toStartOf="@+id/imageViewWidgetNext"
+            android:layout_toStartOf="@+id/imageViewWidgetForward"
             android:src="@drawable/widget_play" />
+
+        <ImageView
+            android:id="@+id/imageViewWidgetForward"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toStartOf="@+id/imageViewWidgetNext"
+            android:src="@drawable/widget_play_forward" />
 
         <ImageView
             android:id="@+id/imageViewWidgetNext"

@@ -74,6 +74,8 @@ class StoryPlayer implements PlayController {
 		this.context = context;
 		handler = new Handler();
 		mediaPlayer = new MediaPlayer();
+		mediaPlayer.reset();
+		
 		mediaPlayer.setWakeMode( context, PowerManager.PARTIAL_WAKE_LOCK );
 		
 		mediaPlayer.setOnErrorListener( new OnErrorListener() {
@@ -333,11 +335,6 @@ class StoryPlayer implements PlayController {
 	}
 
 	@Override
-	public PlayController.PLAYER_STATE getState() {
-		return playerState;
-	}
-
-	@Override
 	public void setPlayInfo(PlayInfo pi) {
 		playInfo = pi;
 		playInfo.getPlayList(StoryTellerApp.EXTENSION, true);
@@ -354,13 +351,6 @@ class StoryPlayer implements PlayController {
 		notifyStateChanged();
 	}
 
-	@Override
-	public PlayInfo getPlayInfo() {
-		getPlayInfoInner()
-			.setCurrentPlayingPosition( mediaPlayer.getCurrentPosition() );
-		return playInfo;
-	}
-
 	private PlayInfo getPlayInfoInner() {
 		if( playInfo == null ) {
 			playInfo = Preferences.getInstance().readPlayListInfo();
@@ -368,5 +358,10 @@ class StoryPlayer implements PlayController {
 		}
 		
 		return playInfo;
+	}
+
+	@Override
+	public PLAYER_STATE getState() {
+		return playerState;
 	}
 }

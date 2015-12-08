@@ -61,7 +61,7 @@ public class Preferences {
 		return stackTrace;
 	}
 	
-	public void savePlayListInfo( PlayInfo pi ) {
+	synchronized public void savePlayListInfo( PlayInfo pi ) {
 		pi.toPreferences(preferences);
 	}
 	
@@ -69,14 +69,14 @@ public class Preferences {
 		return PlayInfo.fromPreferences(preferences);
 	}
 	
-	public void setCurrentPlaying( Uri currentPlaying ) {
+	synchronized public void setCurrentPlaying( Uri currentPlaying ) {
 		preferences
 			.edit()
 			.putString(Preferences.KEY_CURRENT_PLAYING, currentPlaying.toString() )
 			.apply();
 	}
 
-	public void setCurrentPlayingPosition(long position) {
+	synchronized public void setCurrentPlayingPosition(long position) {
 		preferences
 			.edit()
 			.putLong(Preferences.KEY_CURRENT_POSITION, position )
@@ -163,9 +163,9 @@ public class Preferences {
 		return progressValue+1;
 	}
 
-	public void setForwardSkipValue( FORWARD_SKIP_TYPE type,
-									 int progressValueOfPercent,
-									 int progressValueOfSecond ) {
+	synchronized public void setForwardSkipValue( FORWARD_SKIP_TYPE type,
+												  int progressValueOfPercent,
+												  int progressValueOfSecond ) {
 		
 		preferences
 			.edit()
@@ -197,7 +197,7 @@ public class Preferences {
 		return skipHeaderSecond;
 	}
 	
-	public void setSkipHeader( boolean skipHeader, int skipSec ) {
+	synchronized public void setSkipHeader( boolean skipHeader, int skipSec ) {
 		preferences
 			.edit()
 			.putBoolean(KEY_SKIP_HEADER, skipHeader)

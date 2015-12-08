@@ -11,11 +11,11 @@ import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.net.Uri;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
-import android.os.SystemClock;
+import android.os.ResultReceiver;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
-import android.view.KeyEvent;
 import android.widget.Toast;
 
 import com.zsm.log.Log;
@@ -50,7 +50,7 @@ public class PlayService extends Service
 	public void onCreate() {
 		super.onCreate();
 		PlayInfo playInfo = initPlayer();
-		notification = buildNotification( this, playInfo );
+		notification = buildNotification( this, playInfo.refreshCurrentPlaying() );
 		startForeground(NOTIFICATION_ID, notification);
 		
 		receiver = new PlayControllerReceiver();
@@ -159,11 +159,6 @@ public class PlayService extends Service
 	}
 
 	@Override
-	public PlayController.PLAYER_STATE getState() {
-		return player.getState();
-	}
-
-	@Override
 	public void pause(boolean updateView) {
 		player.pause(updateView);
 		audioManager.abandonAudioFocus( this );
@@ -199,20 +194,11 @@ public class PlayService extends Service
 	@Override
 	public void setPlayInfo(PlayInfo playInfo) {
 		player.setPlayInfo(playInfo);
-		Notification notification = buildNotify(playInfo);
+		Notification notification
+			= PlayService
+				.buildNotification( this, playInfo.refreshCurrentPlaying() );
 	    NotificationManagerCompat
 	    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
-	}
-
-	private Notification buildNotify(PlayInfo playInfo) {
-		Notification notification
-			= PlayService.buildNotification( this, playInfo );
-		return notification;
-	}
-
-	@Override
-	public PlayInfo getPlayInfo() {
-		return player.getPlayInfo();
 	}
 
 	private void handleIntent(Intent intent) {
@@ -239,11 +225,23 @@ public class PlayService extends Service
 			case PlayController.ACTION_PLAYER_PLAY_NEXT:
 				toNext();
 				break;
+			case PlayController.ACTION_PLAYER_PLAY_FAST_FORWARD:
+				forward();
+				break;
+			case PlayController.ACTION_PLAYER_PLAY_REWIND:
+				rewind();
+				break;
 			case PlayController.ACTION_PLAYER_MAIN_ACTIVITY:
 				startMainActivity( this );
 				break;
 			case PlayController.ACTION_PLAYER_EMPTY:
 				// Just for init
+				break;
+			case PlayController.ACTION_GET_PLAYER_STATE:
+				ResultReceiver rr
+					= intent.getParcelableExtra( 
+								PlayController.KEY_PLAYER_RESULT_RECEIVER );
+				giveStateBack( rr );
 				break;
 			default:
 				Log.w( "Unsupported action type", intent );
@@ -259,8 +257,13 @@ public class PlayService extends Service
 		context.startActivity(intent);
 	}
 
-	static public Notification buildNotification(Context context, PlayInfo playInfo ) {
-		Uri currentPlaying = playInfo.refreshCurrentPlaying();
+	private void giveStateBack(ResultReceiver rr) {
+		Bundle b = new Bundle();
+		b.putString( PlayController.KEY_PLAYER_STATE, player.getState().name() );
+		rr.send( PlayController.REQUEST_RETRIEVE_CODE, b );
+	}
+
+	static public Notification buildNotification(Context context, Uri currentPlaying ) {
 		String mediaTitle = "";
 		if( currentPlaying != null ) {
 			MediaInfo mi = new MediaInfo( context, currentPlaying );
@@ -303,6 +306,11 @@ public class PlayService extends Service
 	        	Log.d( focusChange );
 	        	break;
 	    }
+	}
+
+	@Override
+	public PLAYER_STATE getState() {
+		return player.getState();
 	}
 
 }

@@ -2,11 +2,10 @@ package com.zsm.storyteller.ui;
 
 import java.util.List;
 
-import com.zsm.storyteller.play.PlayController;
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
-
 import android.content.Context;
 import android.net.Uri;
+
+import com.zsm.storyteller.play.PlayController;
 
 public interface PlayerView {
 	

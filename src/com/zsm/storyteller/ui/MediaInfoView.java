@@ -84,7 +84,7 @@ class MediaInfoView extends LinearLayout {
 	}
 
 	public long getMediaDuration() {
-		return duration;
+		return mediaInfo.getDuration();
 	}
 	
 	private void fillMediaInfo(String defaultTitle) {

@@ -15,9 +15,9 @@ public class PlayControllerReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
+		Log.d( intent );
 		if( intent.getAction().equals( AudioManager.ACTION_AUDIO_BECOMING_NOISY ) ) {
-			Intent i = new Intent( PlayController.ACTION_PLAYER_PAUSE );
-			context.sendBroadcast(i);
+			sendActionToService(context, PlayController.ACTION_PLAYER_PAUSE );
 		} else if( intent.getAction().equals(Intent.ACTION_MEDIA_BUTTON)) {
 			KeyEvent event
 				= (KeyEvent)intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
@@ -29,6 +29,12 @@ public class PlayControllerReceiver extends BroadcastReceiver {
         if (event == null)
             return;
 
+        if( event.getAction() == KeyEvent.ACTION_DOWN 
+        	&& event.getKeyCode() != KeyEvent.KEYCODE_HEADSETHOOK ) {
+        	
+        	return;
+        }
+		Log.d(event);
         String action = null;
         switch (event.getKeyCode()) {
 	        //这里根据按下的时间和操作，分离出具体的控制
@@ -54,19 +60,31 @@ public class PlayControllerReceiver extends BroadcastReceiver {
 	        case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
 	        	action = PlayController.ACTION_PLAYER_PLAY_PREVIOUS;
 	            break;
+	        case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
+	        	action = PlayController.ACTION_PLAYER_PLAY_FAST_FORWARD;
+	            break;
+	        case KeyEvent.KEYCODE_MEDIA_REWIND:
+	        	action = PlayController.ACTION_PLAYER_PLAY_REWIND;
+	            break;
 	    }
-        
-        if( action != null ) {
+        sendActionToService(context, action);
+    }
+
+	private void sendActionToService(Context context, String action) {
+		if( action != null ) {
         	Intent intent = new Intent( action );
-        	PendingIntent pi = PendingIntent.getService(context, 2, intent, 0);
+        	PendingIntent pi
+        		= PendingIntent.getService(context,
+        								   PlayController.REQUEST_PLAY_CODE,
+        								   intent,
+        								   0);
         	try {
 				pi.send();
 			} catch (CanceledException e) {
 				Log.e( "Action from media button does not sent", "action", action );
 			}
         }
-        
-    }
+	}
 	
     /*
      * one click => play/pause long click => previous double click => next

@@ -46,6 +46,9 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
         			  PlayController.ACTION_PLAYER_PLAY_NEXT,
         			  R.id.imageViewWidgetNext);
         addClickEvent(context, appWidgetManager, appWidgetIds,
+		  			  PlayController.ACTION_PLAYER_PLAY_FAST_FORWARD,
+		  			  R.id.imageViewWidgetForward);
+        addClickEvent(context, appWidgetManager, appWidgetIds,
   			  		  PlayController.ACTION_PLAYER_MAIN_ACTIVITY,
   			  		  R.id.layoutMainWidget);
         
