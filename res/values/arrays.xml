@@ -8,5 +8,13 @@
         <item >PERCENT</item>
         <item >SECOND</item>
     </string-array>
+    <string-array name="playOrderType">
+        <item >@string/prefPlayOrderByName</item>
+        <item >@string/prefPlayOrderRandom</item>
+    </string-array>
+    <string-array name="playOrderValue">
+        <item >BY_NAME</item>
+        <item >RANDOM</item>
+    </string-array>
     
 </resources>

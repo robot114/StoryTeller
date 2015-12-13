@@ -7,6 +7,8 @@ import com.zsm.storyteller.PlayInfo;
 public interface PlayController {
 	public enum PLAYER_STATE { 
 		IDLE, INITIALIZED, PREPARED, STARTED, PAUSED, STOPPED, PLAYBACKCOMPLETED }
+	
+	public enum PLAY_ORDER { BY_NAME, RANDOM }
 
 	public static final String ACTION_PLAYER_PLAY_PAUSE
 		= "com.zsm.storyteller.PLAYER.PLAY_PAUSE";

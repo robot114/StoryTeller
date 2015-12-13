@@ -167,6 +167,8 @@ class StoryPlayer implements PlayController {
 		if( uri != null ) {
 			playInfo.setCurrentPlaying(uri);
 			playInfo.setCurrentPlayingPosition(startPosition);
+			playerState = PLAYER_STATE.IDLE;
+			updatePlayerViewMedia(uri, startPosition);
 		}
 		playCurrent();
 	}
@@ -244,7 +246,17 @@ class StoryPlayer implements PlayController {
 	
 	@Override
 	public void toNext() {
-		Uri uri = getPlayInfoInner().nextOne();
+		Uri uri = getPlayInfoInner().nextOne( playRandomly() );
+		if( uri != null ) {
+			play(uri, 0);
+		} else {
+			stop();
+		}
+	}
+
+	@Override
+	public void toPrevious() {
+		Uri uri = getPlayInfoInner().previousOne( playRandomly() );
 		if( uri != null ) {
 			play(uri, 0);
 		} else {
@@ -252,14 +264,9 @@ class StoryPlayer implements PlayController {
 		}
 	}
 	
-	@Override
-	public void toPrevious() {
-		Uri uri = getPlayInfoInner().previousOne();
-		if( uri != null ) {
-			play(uri, 0);
-		} else {
-			stop();
-		}
+	private boolean playRandomly(){
+		return Preferences.getInstance().getPlayOrder()
+					== PlayController.PLAY_ORDER.RANDOM;
 	}
 	
 	@Override

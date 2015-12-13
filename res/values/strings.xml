@@ -33,5 +33,11 @@
     <string name="autoStartOff">Do not start playing when the app starts</string>
     <string name="autoStartTitle">Start playing automatically</string>
     <string name="audioFocusPlayNotAllowed">The player is not allowed to play right now</string>
-
+    <string name="prefPlayOrderByName">By Name</string>
+    <string name="prefPlayOrderRandom">Random</string>
+    <string name="playOrder">Play order</string>
+    <string name="playOrderSumByName">Play the items in the order of the name</string>
+    <string name="playOrderSumRandom">Play the items randomly</string>
+    <string name="prefKeyPlayOrder">PLAY_ORDER</string>
+    
 </resources>

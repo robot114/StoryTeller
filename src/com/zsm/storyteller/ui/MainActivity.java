@@ -17,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ExpandableListView.OnGroupClickListener;
@@ -30,8 +31,10 @@ import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
+import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.play.RemotePlayer;
+import com.zsm.storyteller.preferences.MainPreferenceFragment;
 import com.zsm.storyteller.preferences.Preferences;
 
 public class MainActivity extends Activity
@@ -42,13 +45,13 @@ public class MainActivity extends Activity
 	private ExpandableListView playListView;
 	private MediaInfoListAdapter playListAdapter;
 	private MediaInfoView mediaInfoView;
+	private ImageView playOrderView;
+	private TimedProgressBar progressBar;
 	
 	private Drawable playIcon;
 	private Drawable pauseIcon;
 	
-	private TimedProgressBar progressBar;
-
-	private List<Uri> playList;
+//	private List<Uri> playList;
 	private PlayController player;
 	private BroadcastReceiver receiver;
 	private PLAYER_STATE playerState;
@@ -67,6 +70,39 @@ public class MainActivity extends Activity
 		playPause = (ImageView)findViewById( R.id.imageViewPlay );
 		playingText = (TextView)findViewById( R.id.textViewPlayingFile );
 		
+		initListView();
+		
+		mediaInfoView = (MediaInfoView)findViewById( R.id.viewMediaInfo );
+		mediaInfoView.setVisibility( View.INVISIBLE );
+		
+		playIcon = getResources().getDrawable( R.drawable.play );
+		pauseIcon = getResources().getDrawable( R.drawable.pause );
+		
+		initProgressBar();
+		
+		playOrderView = (ImageView)findViewById( R.id.imageViewPlayOrder );
+		playOrderView.setOnClickListener( new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				PLAY_ORDER order = Preferences.getInstance().getPlayOrder();
+				PLAY_ORDER enums[] = PLAY_ORDER.values();
+				order = enums[ (order.ordinal()+1)%enums.length ];
+				Preferences.getInstance().setPlayOrder(order);
+				setPlayOrderIcon( order );
+			}
+		} );
+		
+		registerPlayerViewReceiver();
+		
+		new Thread( new Runnable() {
+			@Override
+			public void run() {
+				initPlayer();
+			}
+		}, "PlayerInit" ).start();
+	}
+
+	private void initListView() {
 		playListView = (ExpandableListView)findViewById( R.id.listPlayList );
 		playListAdapter = new MediaInfoListAdapter( this, playListView );
 		playListView.setAdapter(playListAdapter);
@@ -80,16 +116,10 @@ public class MainActivity extends Activity
 				return true;
 			}
 		});
-		
-		mediaInfoView = (MediaInfoView)findViewById( R.id.viewMediaInfo );
-		mediaInfoView.setVisibility( View.INVISIBLE );
-		
-		playIcon = getResources().getDrawable( R.drawable.play );
-		pauseIcon = getResources().getDrawable( R.drawable.pause );
-		
-		playListAdapter.setData(playList);
 		playListAdapter.notifyDataSetChanged();
-		
+	}
+
+	private void initProgressBar() {
 		progressBar = (TimedProgressBar)findViewById( R.id.timedProgressBar );
 		
 		progressBar.setOnSeekBarChangeListener( new OnSeekBarChangeListener() {
@@ -122,25 +152,6 @@ public class MainActivity extends Activity
 			}
 			
 		} );
-		
-		registerPlayerViewReceiver();
-		
-		new Thread( new Runnable() {
-			@Override
-			public void run() {
-				Looper.prepare();
-				player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
-				playListAdapter.setPlayer(player);
-				PLAYER_STATE playerStateNow = player.getState();
-				Log.d( playerStateNow );
-				if( ( playerStateNow == null 
-						|| playerStateNow == PlayController.PLAYER_STATE.IDLE ) 
-					&& Preferences.getInstance().autoStartPlaying() ) {
-					
-					player.playPause();
-				}
-			}
-		}, "PlayerInit" ).start();
 	}
 
 	private void registerPlayerViewReceiver() {
@@ -163,20 +174,44 @@ public class MainActivity extends Activity
 		registerReceiver(receiver, filter);
 	}
 	
+	private void initPlayer() {
+		Looper.prepare();
+		player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
+		playListAdapter.setPlayer(player);
+		PLAYER_STATE playerStateNow = player.getState();
+		Log.d( playerStateNow );
+		if( ( playerStateNow == null 
+				|| playerStateNow == PlayController.PLAYER_STATE.IDLE ) 
+			&& Preferences.getInstance().autoStartPlaying() ) {
+			
+			player.playPause();
+		}
+	}
+
 	@Override
 	protected void onResume() {
 		super.onResume();
 		NotificationManagerCompat.from(this).cancel(PlayService.NOTIFICATION_ID);
+		PLAY_ORDER order = Preferences.getInstance().getPlayOrder();
+		setPlayOrderIcon(order);
+	}
+
+	private void setPlayOrderIcon(PLAY_ORDER order) {
+		playOrderView.setImageResource( 
+				MainPreferenceFragment.PLAY_ORDER_ICONS[ order.ordinal() ] );
 	}
 
 	@Override
 	protected void onPause() {
+		updateNotification();
+		super.onPause();
+	}
+
+	private void updateNotification() {
 		Notification notification
 			= PlayService.buildNotification( this, currentPlaying );
 	    NotificationManagerCompat
 	    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
-			
-		super.onPause();
 	}
 
 	@Override
@@ -238,7 +273,7 @@ public class MainActivity extends Activity
 	@Override
 	public boolean onChildClick(ExpandableListView parent, View v,
 								int groupPosition, int childPosition, long id) {
-		selectOneToPlay( playList.get( groupPosition ) );
+		selectOneToPlay( (Uri) playListAdapter.getGroup(groupPosition) );
 		return true;
 	}
 
@@ -271,8 +306,24 @@ public class MainActivity extends Activity
 		mediaInfoView.setVisibility( View.VISIBLE );
 		playingText.setText( uri.getLastPathSegment() );
 		progressBar.setDuration( (int) mediaInfoView.getMediaDuration() );
+		updateNotification();
+		
+		int positionOf = playListAdapter.getPositionOf(uri);
+		positionOf
+			= ( positionOf < 0 || positionOf >= playListAdapter.getGroupCount() )
+				? 0 : positionOf;
+		makeCurrentItemVisible( positionOf );
 	}
 
+	public void makeCurrentItemVisible(int position) {
+	    int first = playListView.getFirstVisiblePosition();
+	    int last = playListView.getLastVisiblePosition();
+
+	    if (position < first || position >= last ) {
+	        playListView.smoothScrollToPosition(position);
+	    }
+	}
+	
 	@Override
 	public void updatePlayList(List<Uri> playList) {
 		playListAdapter.setData( playList );

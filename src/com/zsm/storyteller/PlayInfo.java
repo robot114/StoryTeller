@@ -204,31 +204,37 @@ public class PlayInfo implements Parcelable {
 		return currentPlaying;
 	}
 
-	public Uri nextOne() {
+	public Uri nextOne( boolean random ) {
 		if( isListValid() ) {
 			return null;
 		}
 		
-		if( currentPlayingIndex >= playList.size()-1 ) {
-			return null;
+		if( random ) {
+			currentPlayingIndex = (int) (Math.random()*playList.size());
+		} else {
+			if( currentPlayingIndex >= playList.size()-1 ) {
+				return null;
+			}
+			currentPlayingIndex++;
 		}
-		
-		currentPlayingIndex++;
 		currentPlaying = playList.get( currentPlayingIndex );
-		
 		return currentPlaying;
 	}
 
-	public Uri previousOne() {
+	public Uri previousOne( boolean random ) {
 		if( isListValid() ) {
 			return null;
 		}
-		
-		if( currentPlayingIndex <= 0 ) {
-			return null;
+
+		if( random ) {
+			currentPlayingIndex = (int) (Math.random()*playList.size());
+		} else {
+			if( currentPlayingIndex <= 0 ) {
+				return null;
+			}
+			
+			currentPlayingIndex--;
 		}
-		
-		currentPlayingIndex--;
 		currentPlaying = playList.get( currentPlayingIndex );
 		
 		return currentPlaying;

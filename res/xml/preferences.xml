@@ -12,5 +12,16 @@
 			android:summaryOff="@string/autoStartOff"
 			android:title="@string/autoStartTitle"
 			android:persistent="true" android:defaultValue="true"/>
+        <ListPreference
+            android:entries="@array/playOrderType"
+            android:entryValues="@array/playOrderValue"
+            android:icon="@drawable/play_random"
+            android:key="@string/prefKeyPlayOrder"
+            android:summary="@string/playOrderSumByName"
+            android:title="@string/playOrder"
+            android:enabled="true"
+            android:persistent="true"
+            android:selectable="true"
+            android:defaultValue="BY_NAME"/>
     </PreferenceCategory>
 </PreferenceScreen>

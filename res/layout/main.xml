@@ -8,7 +8,7 @@
 
     <RelativeLayout
         android:id="@+id/layoutFile"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/layoutController" >
 
@@ -16,6 +16,8 @@
             android:id="@+id/imageViewOpenOne"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/defaultPadding"
+            android:layout_marginRight="@dimen/defaultPadding"
             android:contentDescription="@string/opneOne"
             android:onClick="onOpenOne"
             android:src="@drawable/open_one" />
@@ -26,10 +28,22 @@
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/defaultPadding"
+            android:layout_marginRight="@dimen/defaultPadding"
+            android:layout_toEndOf="@id/imageViewOpenOne"
             android:contentDescription="@string/openFolder"
             android:onClick="onOpenFolder"
             android:src="@drawable/open_folder" />
+
     </RelativeLayout>
+
+    <ImageView
+        android:id="@+id/imageViewPlayOrder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/layoutController"
+        android:layout_alignParentEnd="true"
+        android:src="@drawable/play_inrorder" />
 
     <RelativeLayout
         android:id="@+id/layoutController"

@@ -55,12 +55,12 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 
 	@Override
 	public Object getGroup(int groupPosition) {
-		return data.get(groupPosition);
+		return getMediaItem(groupPosition);
 	}
 
 	@Override
 	public Object getChild(int groupPosition, int childPosition) {
-		return data.get(groupPosition);
+		return getMediaItem(groupPosition);
 	}
 
 	@Override
@@ -97,7 +97,7 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 	    	viewImage = (ImageView) tags[1];
 	    	updateImageTag(groupPosition, isExpanded, viewImage);
 	    }
-	    viewText.setText(data.get(groupPosition).getLastPathSegment());
+	    viewText.setText(getMediaItem(groupPosition).getLastPathSegment());
 	    viewText.setTag( groupPosition );
 	    if( isExpanded) {
 	    	viewImage.setImageResource( R.drawable.to_collapse );
@@ -161,7 +161,7 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 			view = new MediaInfoView(context, true);
 		}
 		
-		view.setDataSource( data.get(groupPosition) );
+		view.setDataSource( getMediaItem(groupPosition) );
 		return view;
 	}
 
@@ -169,4 +169,13 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 	public boolean isChildSelectable(int groupPosition, int childPosition) {
 		return true;
 	}
+	
+	private Uri getMediaItem(int groupPosition) {
+		return data == null ? null : data.get(groupPosition);
+	}
+
+	public int getPositionOf(Uri uri) {
+		return data.indexOf(uri);
+	}
+
 }

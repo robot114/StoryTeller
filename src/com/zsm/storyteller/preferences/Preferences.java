@@ -2,9 +2,13 @@ package com.zsm.storyteller.preferences;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.PlayInfo;
+import com.zsm.storyteller.R;
+import com.zsm.storyteller.play.PlayController;
+import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 
@@ -36,6 +40,8 @@ public class Preferences {
 	private static final String KEY_SKIP_HEADER_SECOND = "SKIP_HEADER_SECOND";
 	private static final String KEY_AUTO_START_PLAYING = "AUTO_START_PLAYING";
 	
+	public static String KEY_PLAY_ORDER = null;
+	
 	private Preferences( Context context ) {
 		preferences
 			= PreferenceManager
@@ -49,8 +55,15 @@ public class Preferences {
 											 + "Call getInitStackTrace() to get "
 											 + "the initlization place." );
 		}
+		initKeys( c );
+		
 		instance = new Preferences( c );
 		instance.stackTrace = Thread.currentThread().getStackTrace();
+	}
+	
+	static private void initKeys( Context context ) {
+		Resources r = context.getResources();
+		KEY_PLAY_ORDER = r.getString( R.string.prefKeyPlayOrder );
 	}
 	
 	static public Preferences getInstance() {
@@ -210,5 +223,17 @@ public class Preferences {
 	
 	public boolean autoStartPlaying() {
 		return preferences.getBoolean( KEY_AUTO_START_PLAYING, true );
+	}
+
+	public PLAY_ORDER getPlayOrder() {
+		String orderName
+			= preferences.getString(KEY_PLAY_ORDER, PLAY_ORDER.BY_NAME.name() );
+		PLAY_ORDER order = PLAY_ORDER.valueOf(orderName);
+		
+		return order == null ? PLAY_ORDER.BY_NAME : order;
+	}
+	
+	public void setPlayOrder( PLAY_ORDER order ) {
+		preferences.edit().putString(KEY_PLAY_ORDER, order.name() ).commit();
 	}
 }
