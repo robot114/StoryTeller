@@ -3,6 +3,7 @@ package com.zsm.storyteller.play;
 import java.io.File;
 
 import android.app.Activity;
+import android.content.Context;
 import android.net.Uri;
 
 import com.zsm.android.ui.fileselector.FileOperation;
@@ -18,8 +19,8 @@ public class PlayFileHandler implements OnHandleFileListener {
 	private PlayController player;
 	private FileSelector fileSelector;
 
-	public PlayFileHandler( PlayController pc ) {
-		player = pc;
+	public PlayFileHandler( Context context ) {
+		player = new RemotePlayer( context );
 	}
 	
 	@Override

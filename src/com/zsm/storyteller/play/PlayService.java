@@ -3,6 +3,7 @@ package com.zsm.storyteller.play;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -16,6 +17,7 @@ import android.os.IBinder;
 import android.os.ResultReceiver;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
+import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import com.zsm.log.Log;
@@ -24,12 +26,13 @@ import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.storyteller.ui.MainActivity;
+import com.zsm.storyteller.ui.StoryTellerAppWidgetProvider;
 
 public class PlayService extends Service
 				implements PlayController, OnAudioFocusChangeListener {
 
 	public static final int NOTIFICATION_ID = 1;
-
+	
 	private IBinder binder = null;
 	private PlayController player;
 	private Notification notification;
@@ -39,11 +42,15 @@ public class PlayService extends Service
 	private AudioManager audioManager;
 
 	private ComponentName buttonReceiverCompName;
-
+	
 	public final class ServiceBinder extends Binder {
 		public PlayService getService() {
 		    return PlayService.this;
 		}
+	}
+
+	public PlayService() {
+		super();
 	}
 
 	@Override
@@ -63,6 +70,20 @@ public class PlayService extends Service
 			= new ComponentName( getPackageName(), 
 								 PlayControllerReceiver.class.getName() );
 		audioManager.registerMediaButtonEventReceiver(buttonReceiverCompName);
+	}
+
+	@Override
+	public void onTaskRemoved(Intent rootIntent) {
+		RemoteViews remoteViews
+			= new RemoteViews(this.getPackageName(), R.layout.main_widget);
+		AppWidgetManager appWidgetManager
+			= AppWidgetManager.getInstance(this.getApplicationContext());
+		ComponentName widgets
+			= new ComponentName(this, StoryTellerAppWidgetProvider.class);
+	    int[] allWidgetIds = appWidgetManager.getAppWidgetIds(widgets);
+		remoteViews.setImageViewResource( R.id.imageViewWidgetPlay,
+				  						  R.drawable.widget_play);
+		appWidgetManager.updateAppWidget(allWidgetIds, remoteViews);
 	}
 
 	private PlayInfo initPlayer() {
@@ -111,9 +132,9 @@ public class PlayService extends Service
 	}
 	
 	@Override
-	public void selectOneToPlay(Uri uri, long startPosition) {
+	public void play(Uri uri, int startPosition) {
 		if( allowToPlay() ) {
-			player.selectOneToPlay(uri, startPosition);
+			player.play(uri, startPosition);
 		} else {
 			promptNotAllowed();
 		}
@@ -161,21 +182,22 @@ public class PlayService extends Service
 	@Override
 	public void pause(boolean updateView) {
 		player.pause(updateView);
-		audioManager.abandonAudioFocus( this );
-	}
-
-	@Override
-	public void start(boolean updateView) {
-		if( allowToPlay() ) {
-			player.start(updateView);
-		} else {
-			promptNotAllowed();
+		if( updateView ) {
+			audioManager.abandonAudioFocus( this );
 		}
 	}
 
 	@Override
-	public boolean inPlayingState() {
-		return player.inPlayingState();
+	public void start(boolean updateView) {
+		if( updateView ) {
+			if( allowToPlay() ) {
+				player.start(updateView);
+			} else {
+				promptNotAllowed();
+			}
+		} else {
+			player.start(updateView);
+		}
 	}
 
 	@Override
@@ -191,8 +213,19 @@ public class PlayService extends Service
 		}
 	}
 
+	private boolean inPlayingState() {
+		PLAYER_STATE playerState = player.getState();
+		return playerState  == PlayController.PLAYER_STATE.PAUSED 
+				|| playerState == PlayController.PLAYER_STATE.STARTED
+				|| playerState == PlayController.PLAYER_STATE.PREPARED;
+	}
+	
 	@Override
 	public void setPlayInfo(PlayInfo playInfo) {
+		if( playInfo == null ) {
+			return;
+		}
+		
 		player.setPlayInfo(playInfo);
 		Notification notification
 			= PlayService
@@ -207,40 +240,59 @@ public class PlayService extends Service
 			return;
 		}
 		switch( intent.getAction() ) {
-			case PlayController.ACTION_PLAYER_PLAY_PAUSE:
+			case ACTION_PLAYER_PLAY_PAUSE:
 				playPause();
 				break;
-			case PlayController.ACTION_PLAYER_PLAY:
-				start( true );
+			case ACTION_PLAYER_PLAY:
+				Uri uri = intent.getParcelableExtra( KEY_PLAY_ITEM );
+				int sp = intent.getIntExtra( KEY_MEDIA_POSITION, 0 );
+				play( uri, sp );
 				break;
-			case PlayController.ACTION_PLAYER_PAUSE:
-				pause( true );
+			case ACTION_PLAYER_START:
+				start( shouldUpdateView( intent ) );
 				break;
-			case PlayController.ACTION_PLAYER_STOP:
+			case ACTION_PLAYER_PAUSE:
+				pause( shouldUpdateView( intent ) );
+				break;
+			case ACTION_PLAYER_STOP:
 				stop();
 				break;
-			case PlayController.ACTION_PLAYER_PLAY_PREVIOUS:
+			case ACTION_PLAYER_PLAY_PREVIOUS:
 				toPrevious();
 				break;
-			case PlayController.ACTION_PLAYER_PLAY_NEXT:
+			case ACTION_PLAYER_PLAY_NEXT:
 				toNext();
 				break;
-			case PlayController.ACTION_PLAYER_PLAY_FAST_FORWARD:
+			case ACTION_PLAYER_PLAY_FAST_FORWARD:
 				forward();
 				break;
-			case PlayController.ACTION_PLAYER_PLAY_REWIND:
+			case ACTION_PLAYER_PLAY_REWIND:
 				rewind();
 				break;
-			case PlayController.ACTION_PLAYER_MAIN_ACTIVITY:
+			case ACTION_PLAYER_SEEK_TO:
+				if( intent.hasExtra( KEY_MEDIA_POSITION ) ) {
+					int position
+						= intent.getIntExtra( KEY_MEDIA_POSITION, 0 );
+					seekTo( position );
+				}
+				break;
+			case ACTION_PLAYER_SET_PLAY_INFO:
+				if( intent.hasExtra( KEY_PLAYER_PLAY_INFO ) ) {
+					PlayInfo pi
+						= intent.getParcelableExtra( KEY_PLAYER_PLAY_INFO );
+					setPlayInfo( pi );
+				}
+				break;
+			case ACTION_PLAYER_MAIN_ACTIVITY:
 				startMainActivity( this );
 				break;
-			case PlayController.ACTION_PLAYER_EMPTY:
+			case ACTION_PLAYER_EMPTY:
 				// Just for init
 				break;
-			case PlayController.ACTION_GET_PLAYER_STATE:
+			case ACTION_GET_PLAYER_STATE:
 				ResultReceiver rr
 					= intent.getParcelableExtra( 
-								PlayController.KEY_PLAYER_RESULT_RECEIVER );
+								KEY_PLAYER_RESULT_RECEIVER );
 				giveStateBack( rr );
 				break;
 			default:
@@ -249,6 +301,10 @@ public class PlayService extends Service
 		}
 	}
 
+	private boolean shouldUpdateView( Intent intent ) {
+		return intent.getBooleanExtra( KEY_PLAYER_UPDATE_VIEW, true );
+	}
+	
 	private void startMainActivity(Context context) {
 		Intent intent = new Intent( context, MainActivity.class );
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -259,8 +315,8 @@ public class PlayService extends Service
 
 	private void giveStateBack(ResultReceiver rr) {
 		Bundle b = new Bundle();
-		b.putString( PlayController.KEY_PLAYER_STATE, player.getState().name() );
-		rr.send( PlayController.REQUEST_RETRIEVE_CODE, b );
+		b.putString( KEY_PLAYER_STATE, player.getState().name() );
+		rr.send( REQUEST_RETRIEVE_CODE, b );
 	}
 
 	static public Notification buildNotification(Context context, Uri currentPlaying ) {
@@ -312,5 +368,4 @@ public class PlayService extends Service
 	public PLAYER_STATE getState() {
 		return player.getState();
 	}
-
 }

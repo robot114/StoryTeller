@@ -12,6 +12,8 @@ public interface PlayController {
 		= "com.zsm.storyteller.PLAYER.PLAY_PAUSE";
 	public static final String ACTION_PLAYER_PLAY
 		= "com.zsm.storyteller.PLAYER.PLAY";
+	public static final String ACTION_PLAYER_START
+		= "com.zsm.storyteller.PLAYER.START";
 	public static final String ACTION_PLAYER_PAUSE
 		= "com.zsm.storyteller.PLAYER.PAUSE";
 	public static final String ACTION_PLAYER_STOP
@@ -24,20 +26,28 @@ public interface PlayController {
 		= "com.zsm.storyteller.PLAYER.PLAY_FAST_FORWARD";
 	public static final String ACTION_PLAYER_PLAY_REWIND
 		= "com.zsm.storyteller.PLAYER.PLAY_REWIND";
+	public static final String ACTION_PLAYER_SEEK_TO
+		= "com.zsm.storyteller.PLAYER.SEEK_TO";
+	public static final String ACTION_PLAYER_SET_PLAY_INFO
+		= "com.zsm.storyteller.PLAYER.SET_PLAY_INFO";
 	public static final String ACTION_PLAYER_MAIN_ACTIVITY
 		= "com.zsm.storyteller.PLAYER.MAIN_ACTIVITY";
 	public static final String ACTION_PLAYER_EMPTY
 		= "com.zsm.storyteller.PLAYER.EMPTY_ACTION";
 	public static final String ACTION_GET_PLAYER_STATE
 		= "com.zsm.storyteller.PLAYER.GET_STATE";
-
-	public static final String KEY_PLAYER_STATE = "PLAYER_STATE";
-	public static final String KEY_PLAYER_RESULT_RECEIVER = "PLAYER_RESULT_RECEIVER";
 	
 	public static final int REQUEST_RETRIEVE_CODE = 100;
 	public static final int REQUEST_PLAY_CODE = 101;
+
+	public static final String KEY_PLAYER_STATE = "PLAYER_STATE";
+	public static final String KEY_PLAYER_RESULT_RECEIVER = "PLAYER_RESULT_RECEIVER";
+	public static final String KEY_MEDIA_POSITION = "MEDIA_POSITION";
+	public static final String KEY_PLAYER_UPDATE_VIEW = "PLAYER_UPDATE_VIEW";
+	public static final String KEY_PLAYER_PLAY_INFO = "PLAYER_PLAY_INFO";
+	public static final String KEY_PLAY_ITEM = "PLAY_ITEM";
 	
-	void selectOneToPlay(Uri uri, long startPosition);
+	void play(Uri uri, int startPosition);
 
 	void stop();
 
@@ -55,15 +65,11 @@ public interface PlayController {
 
 	void start(boolean updateView);
 
-	boolean inPlayingState();
-
 	void playPause();
 
 	void onDestroy();
 
 	void setPlayInfo(PlayInfo playInfo);
-
-//	PlayInfo getPlayInfo();
 
 	PlayController.PLAYER_STATE getState();
 }

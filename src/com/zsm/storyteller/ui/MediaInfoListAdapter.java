@@ -145,7 +145,7 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 		viewText.setOnClickListener( new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				player.selectOneToPlay( data.get((int) v.getTag()), 0 );
+				player.play( data.get((int) v.getTag()), 0 );
 			}
 		} );
 		return viewText;

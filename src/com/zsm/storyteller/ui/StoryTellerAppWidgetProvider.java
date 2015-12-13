@@ -8,9 +8,12 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.net.Uri;
+import android.os.IBinder;
 import android.widget.RemoteViews;
 
+import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.play.PlayController;
@@ -23,6 +26,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	private PlayerViewReceiver playerViewReceiver;
 	private RemoteViews remoteViews;
 	private boolean serviceStarted;
+	private PlayService playService;
 
 	public StoryTellerAppWidgetProvider() {
 		playerViewReceiver = new PlayerViewReceiver( this );
@@ -33,12 +37,9 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 						 int[] appWidgetIds) {
 		
 		if( !serviceStarted ) {
-			Intent intent = new Intent(context, PlayService.class);
-			intent.setAction( PlayController.ACTION_PLAYER_EMPTY );
-			context.startService(intent);
+			startService( context );
 			serviceStarted = true;
 		}
-		
 		addClickEvent(context, appWidgetManager, appWidgetIds,
         			  PlayController.ACTION_PLAYER_PLAY_PAUSE,
         			  R.id.imageViewWidgetPlay);
@@ -54,7 +55,29 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
         
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
 	}
+	
+	private void startService( Context context ) {
+		ServiceConnection serviceConnection = new ServiceConnection() {
+		    @Override
+		    public void onServiceConnected(ComponentName name, IBinder service) {
+		    	Log.d("Service connected", service);
+		        PlayService.ServiceBinder binder = (PlayService.ServiceBinder) service;
+		        playService = binder.getService();
+		    }
+		 
+		    @Override
+		    public void onServiceDisconnected(ComponentName name) {
+		    	playService = null;
+		    }
 
+		};
+		
+		Intent intent = new Intent(context, PlayService.class);
+		context.getApplicationContext()
+					.bindService(intent, serviceConnection,
+							Context.BIND_AUTO_CREATE|Context.BIND_ABOVE_CLIENT);
+	}
+	
 	private void addClickEvent(Context context, AppWidgetManager appWidgetManager,
 							   int[] appWidgetIds, String action,
 							   int viewResId) {
@@ -62,8 +85,8 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		// Perform this loop procedure for each App Widget that belongs to this provider
         Intent intent = new Intent(action);
         PendingIntent pi
-			= PendingIntent.getService(context, 0, intent,
-										 PendingIntent.FLAG_UPDATE_CURRENT);
+			= PendingIntent.getService(context, 1, intent,
+									   PendingIntent.FLAG_UPDATE_CURRENT);
 
         RemoteViews views
         	= new RemoteViews(context.getPackageName(), R.layout.main_widget);

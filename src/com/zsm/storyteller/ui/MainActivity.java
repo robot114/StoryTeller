@@ -1,12 +1,9 @@
 package com.zsm.storyteller.ui;
 
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 import android.app.Activity;
 import android.app.Notification;
-import android.app.PendingIntent;
-import android.app.PendingIntent.CanceledException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,9 +11,7 @@ import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
-import android.os.ResultReceiver;
 import android.support.v4.app.NotificationManagerCompat;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -36,26 +31,11 @@ import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayService;
+import com.zsm.storyteller.play.RemotePlayer;
 import com.zsm.storyteller.preferences.Preferences;
 
 public class MainActivity extends Activity
 				implements PlayerView, OnChildClickListener {
-
-	private final class PlayerStateResultReceiver extends ResultReceiver {
-		private PlayController.PLAYER_STATE state;
-
-		private PlayerStateResultReceiver(Handler handler) {
-			super(handler);
-		}
-
-		@Override
-		protected void onReceiveResult(int resultCode, Bundle resultData) {
-			String stateName
-				= resultData.getString( PlayController.KEY_PLAYER_STATE, "" );
-			state = PlayController.PLAYER_STATE.valueOf(stateName);
-			playerSemaphore.release();
-		}
-	}
 
 	private ImageView playPause;
 	private TextView playingText;
@@ -72,8 +52,12 @@ public class MainActivity extends Activity
 	private PlayController player;
 	private BroadcastReceiver receiver;
 	private PLAYER_STATE playerState;
-	private Semaphore playerSemaphore = new Semaphore( 0 );
 	private Uri currentPlaying;
+
+	public MainActivity() {
+		super();
+		player = new RemotePlayer( this );
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -116,7 +100,7 @@ public class MainActivity extends Activity
 			public void onProgressChanged(SeekBar seekBar, int progress,
 										  boolean fromUser) {
 				if (fromUser ) {
-					player.seekTo(progress);
+					progressBar.updateTime( progress );
 		        }
 			}
 
@@ -130,6 +114,7 @@ public class MainActivity extends Activity
 
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
+				player.seekTo(seekBar.getProgress());
 				if ( trackingDragging ) {
 					player.start( false );
 				}
@@ -143,18 +128,16 @@ public class MainActivity extends Activity
 		new Thread( new Runnable() {
 			@Override
 			public void run() {
-				StoryTellerApp storyTellerApp = (StoryTellerApp)getApplication();
-				player = storyTellerApp.getPlayer();
 				Looper.prepare();
 				player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
 				playListAdapter.setPlayer(player);
-				PLAYER_STATE playerStateNow = getPlayerStateNow();
+				PLAYER_STATE playerStateNow = player.getState();
 				Log.d( playerStateNow );
 				if( ( playerStateNow == null 
 						|| playerStateNow == PlayController.PLAYER_STATE.IDLE ) 
 					&& Preferences.getInstance().autoStartPlaying() ) {
 					
-					player.start( true );;
+					player.playPause();
 				}
 			}
 		}, "PlayerInit" ).start();
@@ -249,7 +232,7 @@ public class MainActivity extends Activity
 	}
 	
 	public void selectOneToPlay(Uri uri) {
-		player.selectOneToPlay(uri, 0 );
+		player.play(uri, 0 );
 	}
 
 	@Override
@@ -296,29 +279,4 @@ public class MainActivity extends Activity
 		playListAdapter.notifyDataSetChanged();
 	}
 
-	synchronized private PlayController.PLAYER_STATE getPlayerStateNow() {
-		if( Looper.myLooper() == Looper.getMainLooper() ) {
-			IllegalStateException e = 
-					new IllegalStateException( 
-						"Cannot get player state from the service in the main thread!" );
-			Log.e( e );
-			throw e;
-		}
-		
-		PlayerStateResultReceiver rr = new PlayerStateResultReceiver(null);
-		Intent intent = new Intent( this, PlayService.class );
-		intent.setAction( PlayController.ACTION_GET_PLAYER_STATE );
-		intent.putExtra( PlayController.KEY_PLAYER_RESULT_RECEIVER, rr );
-		PendingIntent pi
-			= PendingIntent.getService( this, PlayController.REQUEST_RETRIEVE_CODE, intent, 0 );
-		try {
-			pi.send();
-			playerSemaphore.acquire();
-		} catch (CanceledException | InterruptedException e) {
-			Log.e( e, "Get player state failed!" );
-			return null;
-		}
-		return rr.state;
-	}
-	
 }

@@ -44,13 +44,17 @@
             <intent-filter>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_PAUSE"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY"/>
+                <action android:name="com.zsm.storyteller.PLAYER.START"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PAUSE"/>
                 <action android:name="com.zsm.storyteller.PLAYER.STOP"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_PREVIOUS"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_NEXT"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_FAST_FORWARD"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_REWIND"/>
+                <action android:name="com.zsm.storyteller.PLAYER.SEEK_TO"/>
+                <action android:name="com.zsm.storyteller.PLAYER.SET_PLAY_INFO"/>
                 <action android:name="com.zsm.storyteller.PLAYER.MAIN_ACTIVITY"/>
+                <action android:name="com.zsm.storyteller.PLAYER.ACTION_PLAYER_EMPTY"/>
                 <action android:name="com.zsm.storyteller.PLAYER.GET_STATE"/>
                 </intent-filter>
         </service>

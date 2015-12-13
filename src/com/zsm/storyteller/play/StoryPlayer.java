@@ -34,7 +34,7 @@ class StoryPlayer implements PlayController {
 		public void run() {
 			int currentPosition = mediaPlayer.getCurrentPosition();
 			updateTime( currentPosition, mediaPlayer.getDuration(), updateTimes++ );
-			if( playerState == PlayController.PLAYER_STATE.STARTED && !mediaPlayer.isPlaying() ) {
+			if( playerState == PLAYER_STATE.STARTED && !mediaPlayer.isPlaying() ) {
 				mediaPlayer.start();
 			}
 		}
@@ -61,7 +61,7 @@ class StoryPlayer implements PlayController {
 	private static final int SAVING_POSITION_FACTOR = 4;
 	
 	private MediaPlayer mediaPlayer;
-	private PlayController.PLAYER_STATE playerState = PlayController.PLAYER_STATE.IDLE;
+	private PLAYER_STATE playerState = PLAYER_STATE.IDLE;
 
 	private PlayInfo playInfo;
 	private TimeTimerTask timeTimerTask;
@@ -108,7 +108,7 @@ class StoryPlayer implements PlayController {
 	@Override
 	public void start(boolean updateView) {
 		mediaPlayer.start();
-		playerState = PlayController.PLAYER_STATE.STARTED;
+		playerState = PLAYER_STATE.STARTED;
 		if( updateView ) {
 			notifyStateChanged();
 		}
@@ -117,7 +117,7 @@ class StoryPlayer implements PlayController {
 	@Override
 	public void pause(boolean updateView) {
 		mediaPlayer.pause();
-		playerState = PlayController.PLAYER_STATE.PAUSED;
+		playerState = PLAYER_STATE.PAUSED;
 		if( updateView ) {
 			notifyStateChanged();
 		}
@@ -129,7 +129,7 @@ class StoryPlayer implements PlayController {
 		mediaPlayer.seekTo( cp );
 		mediaPlayer.start();
 		updateTime( cp, mediaPlayer.getDuration(), 0 );
-		playerState = PlayController.PLAYER_STATE.STARTED;
+		playerState = PLAYER_STATE.STARTED;
 		notifyStateChanged();
 		if( timeTimerTask == null ) {
 			timeTimerTask = new TimeTimerTask();
@@ -142,7 +142,7 @@ class StoryPlayer implements PlayController {
 
 	@Override
 	public void forward() {
-		if( inPlayingState() ) {
+		if( mediaPlayer.isPlaying() ) {
 			int msec = mediaPlayer.getCurrentPosition() + skipMillisecond();
 			if( msec < mediaPlayer.getDuration() ) {
 				mediaPlayer.seekTo( msec );
@@ -154,7 +154,7 @@ class StoryPlayer implements PlayController {
 
 	@Override
 	public void rewind() {
-		if( inPlayingState() ) {
+		if( mediaPlayer.isPlaying() ) {
 			int msec = mediaPlayer.getCurrentPosition() - skipMillisecond();
 			msec = msec < 0 ? 0 : msec;
 			mediaPlayer.seekTo( msec );
@@ -162,13 +162,13 @@ class StoryPlayer implements PlayController {
 	}
 
 	@Override
-	public void selectOneToPlay(Uri uri, long startPosition ) {
+	public void play(Uri uri, int startPosition ) {
 		stopTimeTimerTask();
-		updatePlayerViewMedia(uri, startPosition);
-		if( prepareToPlay( uri ) ) {
-			playerState = PlayController.PLAYER_STATE.PREPARED;
-			notifyStateChanged();
+		if( uri != null ) {
+			playInfo.setCurrentPlaying(uri);
+			playInfo.setCurrentPlayingPosition(startPosition);
 		}
+		playCurrent();
 	}
 
 	synchronized private void updatePlayerViewMedia(Uri uri, long startPosition) {
@@ -190,16 +190,21 @@ class StoryPlayer implements PlayController {
 
 	@Override
 	public void stop() {
-		if( playerState == PlayController.PLAYER_STATE.STOPPED ) {
-			return;
+		if( inPlayingState() ) {
+			mediaPlayer.stop();
+			mediaPlayer.reset();
 		}
 		
-		mediaPlayer.stop();
-		mediaPlayer.reset();
-		playerState = PlayController.PLAYER_STATE.STOPPED;
+		playerState = PLAYER_STATE.STOPPED;
 		notifyStateChanged();
 		stopTimeTimerTask();
 		updateTime( 0, 0, 0 );
+	}
+	
+	private boolean inPlayingState() {
+		return playerState == PLAYER_STATE.PAUSED 
+				|| playerState == PLAYER_STATE.STARTED
+				|| playerState == PLAYER_STATE.PREPARED;
 	}
 	
 	@Override
@@ -241,7 +246,7 @@ class StoryPlayer implements PlayController {
 	public void toNext() {
 		Uri uri = getPlayInfoInner().nextOne();
 		if( uri != null ) {
-			selectOneToPlay(uri, 0);
+			play(uri, 0);
 		} else {
 			stop();
 		}
@@ -251,7 +256,7 @@ class StoryPlayer implements PlayController {
 	public void toPrevious() {
 		Uri uri = getPlayInfoInner().previousOne();
 		if( uri != null ) {
-			selectOneToPlay(uri, 0);
+			play(uri, 0);
 		} else {
 			stop();
 		}
@@ -259,20 +264,39 @@ class StoryPlayer implements PlayController {
 	
 	@Override
 	public void playPause() {
+		switch( playerState ) {
+			case STARTED:
+				mediaPlayer.pause();
+				playerState = PLAYER_STATE.PAUSED;
+				notifyStateChanged();
+				if( timeTimerTask != null ) {
+					timeTimerTask.state = TASK_STATE.PAUSE;
+				}
+				if( mediaPlayer.isPlaying() ) {
+					updateTime( mediaPlayer.getCurrentPosition(),
+								mediaPlayer.getDuration(), 0 );
+				}
+				break;
+			case STOPPED:
+			case IDLE:
+			case PAUSED:
+				playCurrent();
+				break;
+			default:
+				Log.e( new Exception( "Invalid state: " + playerState ) );
+				break;
+		}
+	}
+
+	private void playCurrent() {
 		Uri currentPlaying = getPlayInfoInner().refreshCurrentPlaying();
 		if( currentPlaying == null ) {
 			Toast.makeText( context, R.string.openPlayFileFirst, Toast.LENGTH_LONG )
 				 .show();
 			return;
 		}
+		
 		switch( playerState ) {
-			case STARTED:
-				mediaPlayer.pause();
-				playerState = PlayController.PLAYER_STATE.PAUSED;
-				notifyStateChanged();
-				timeTimerTask.state = TASK_STATE.PAUSE;
-				updateTime( mediaPlayer.getCurrentPosition(), mediaPlayer.getDuration(), 0 );
-				break;
 			case STOPPED:
 			case IDLE:
 				prepareToPlay(currentPlaying);
@@ -285,10 +309,10 @@ class StoryPlayer implements PlayController {
 				break;
 		}
 	}
-
+	
 	private boolean prepareToPlay(Uri currentPlaying) {
 		mediaPlayer.reset();
-		playerState = PlayController.PLAYER_STATE.IDLE;
+		playerState = PLAYER_STATE.IDLE;
 		notifyStateChanged();
 		try {
 			mediaPlayer.setDataSource( context, currentPlaying );
@@ -327,13 +351,6 @@ class StoryPlayer implements PlayController {
 		}
 	}
 	
-	@Override
-	public boolean inPlayingState() {
-		return playerState == PlayController.PLAYER_STATE.PAUSED 
-				|| playerState == PlayController.PLAYER_STATE.STARTED
-				|| playerState == PlayController.PLAYER_STATE.PREPARED;
-	}
-
 	@Override
 	public void setPlayInfo(PlayInfo pi) {
 		playInfo = pi;
