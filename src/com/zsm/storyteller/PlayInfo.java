@@ -1,7 +1,6 @@
 package com.zsm.storyteller;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -13,33 +12,12 @@ import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.zsm.log.Log;
 import com.zsm.storyteller.preferences.Preferences;
+import com.zsm.util.file.FileExtensionFilter;
+import com.zsm.util.file.FileUtilities;
 
 public class PlayInfo implements Parcelable {
-
-	private final class FolderOrExtFilter implements FileFilter {
-		private String[] extension;
-
-		private FolderOrExtFilter( String[] ext ) {
-			this.extension = ext;
-		}
-		
-		@Override
-		public boolean accept(File pathname) {
-			int extIndex = pathname.getName().lastIndexOf( '.' );
-			boolean inc = false;
-			if( extIndex >= 0 ) {
-				String ext = pathname.getName().substring( extIndex );
-				for( String e : extension ) {
-					if( e.equalsIgnoreCase( ext ) ) {
-						inc = true;
-						break;
-					}
-				}
-			}
-			return pathname.isDirectory() || inc;
-		}
-	}
 
 	private LIST_TYPE listType;
 	// When the type is SINGLE, listInfo should be the uri of the file. 
@@ -142,7 +120,8 @@ public class PlayInfo implements Parcelable {
 		return playList;
 	}
 	
-	public List<Uri> getPlayList( String[] ext, boolean forceRefresh ) {
+	public List<Uri> getPlayList( FileExtensionFilter filter,
+								  boolean forceRefresh ) {
 		
 		if( listInfo == null ) {
 			return null;
@@ -154,7 +133,7 @@ public class PlayInfo implements Parcelable {
 		playList = new ArrayList<Uri>();
 		File f = new File( listInfo.getPath() );
 		if( listType == LIST_TYPE.FOLDER ) {
-			scanFolder( f, playList, new FolderOrExtFilter( ext ) );
+			scanFolder( f, playList, filter );
 		} else {
 			if( !f.exists() || !f.isFile() ) {
 				return null;
@@ -166,13 +145,17 @@ public class PlayInfo implements Parcelable {
 	}
 
 	private void scanFolder( File folder, List<Uri> list,
-							 FileFilter fileFilter ) {
+							 FileExtensionFilter fileFilter ) {
 		
 		if( !folder.exists() || !folder.isDirectory() ) {
 			return;
 		}
 		
-		File[] fs = folder.listFiles( fileFilter );
+		File[] fs = FileUtilities.listFile( folder, fileFilter, true );
+		if( fs == null ) {
+			Log.w( "No file scaned!", folder );
+			return;
+		}
 		Arrays.sort( fs, new Comparator<File>() {
 			@Override
 			public int compare(File lhs, File rhs) {

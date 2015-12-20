@@ -290,10 +290,10 @@ public class PlayService extends Service
 				// Just for init
 				break;
 			case ACTION_GET_PLAYER_STATE:
-				ResultReceiver rr
-					= intent.getParcelableExtra( 
-								KEY_PLAYER_RESULT_RECEIVER );
-				giveStateBack( rr );
+				giveStateBack( intent );
+				break;
+			case ACTION_GET_AUDIO_SESSION_ID:
+				giveAudioSessionIdBack( intent );
 				break;
 			default:
 				Log.w( "Unsupported action type", intent );
@@ -313,10 +313,25 @@ public class PlayService extends Service
 		context.startActivity(intent);
 	}
 
-	private void giveStateBack(ResultReceiver rr) {
+	private void giveStateBack(Intent intent) {
+		ResultReceiver rr = extractResultReceiver(intent);
 		Bundle b = new Bundle();
 		b.putString( KEY_PLAYER_STATE, player.getState().name() );
 		rr.send( REQUEST_RETRIEVE_CODE, b );
+	}
+
+	private void giveAudioSessionIdBack(Intent intent) {
+		ResultReceiver rr = extractResultReceiver(intent);
+		Bundle b = new Bundle();
+		b.putInt( KEY_AUDIO_SESSION_ID, player.getAudioSessionId() );
+		rr.send( REQUEST_RETRIEVE_CODE, b );
+	}
+
+	private ResultReceiver extractResultReceiver(Intent intent) {
+		ResultReceiver rr
+			= intent.getParcelableExtra( 
+						KEY_PLAYER_RESULT_RECEIVER );
+		return rr;
 	}
 
 	static public Notification buildNotification(Context context, Uri currentPlaying ) {
@@ -367,5 +382,10 @@ public class PlayService extends Service
 	@Override
 	public PLAYER_STATE getState() {
 		return player.getState();
+	}
+
+	@Override
+	public int getAudioSessionId() {
+		return player.getAudioSessionId();
 	}
 }

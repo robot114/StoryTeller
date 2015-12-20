@@ -34,6 +34,7 @@ public class PlayerViewReceiver {
 			case PlayerView.ACTION_UPDATE_DATA_SOURCE:
 				Uri uri = (Uri)intent.getParcelableExtra(PlayerView.KEY_DATA_SOURCE);
 				if( uri != null ) {
+					Log.d(this);
 					view.setDataSource(context, uri);
 				}
 				break;

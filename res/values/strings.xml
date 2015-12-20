@@ -15,29 +15,17 @@
     <string name="labelDuration">Duration:</string>
     <string name="toExpandOrCollapse">To expand or collapse</string>
     <string name="noMediaToPlay">No media can be played now!</string>
-    <string name="preferences">Preferences</string>
     <string name="playingSetting">Playing Setting</string>
     <string name="playingSettingDesc">Define something for playing</string>
-    <string name="prefForwordRewindLength">Forward and Rewind Length</string>
-    <string name="prefForwardRewindLenDesc">Set length of time to skip each time forward or rewind pressed</string>
-    <string name="prefForwordRewindType">How to Forward and Rewind</string>
-    <string name="prefForwardRewindTypeDesc">How to skip when forward or rewind</string>
-    <string name="prefForwardRewindByPercent">Skip by %.1f%%</string>
-    <string name="prefForwardRewindBySecond">Skip by %d second</string>
-    <string name="prefSkipHeaderAuto">Skip the header automatically</string>
-    <string name="prefSkipHeaderLengthDesc">Length of the header to skip</string>
-    <string name="prefSkipHeaderLength">Header Length</string>
-    <string name="prefSkipHeader">Skip Header by %d Sec Automatically</string>
     <string name="emptyTime">00:00</string>
     <string name="autoStartOn">Start playing when the app starts</string>
     <string name="autoStartOff">Do not start playing when the app starts</string>
     <string name="autoStartTitle">Start playing automatically</string>
     <string name="audioFocusPlayNotAllowed">The player is not allowed to play right now</string>
-    <string name="prefPlayOrderByName">By Name</string>
-    <string name="prefPlayOrderRandom">Random</string>
     <string name="playOrder">Play order</string>
     <string name="playOrderSumByName">Play the items in the order of the name</string>
     <string name="playOrderSumRandom">Play the items randomly</string>
-    <string name="prefKeyPlayOrder">PLAY_ORDER</string>
+    <string name="pageTitleMediaInfo">Information</string>
+    <string name="pageTitleVisualizer">Visualization</string>
     
 </resources>

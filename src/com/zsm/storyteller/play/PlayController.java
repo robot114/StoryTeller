@@ -38,6 +38,8 @@ public interface PlayController {
 		= "com.zsm.storyteller.PLAYER.EMPTY_ACTION";
 	public static final String ACTION_GET_PLAYER_STATE
 		= "com.zsm.storyteller.PLAYER.GET_STATE";
+	public static final String ACTION_GET_AUDIO_SESSION_ID
+		= "com.zsm.storyteller.PLAYER.GET_AUDIO_SESSION_ID";
 	
 	public static final int REQUEST_RETRIEVE_CODE = 100;
 	public static final int REQUEST_PLAY_CODE = 101;
@@ -48,6 +50,7 @@ public interface PlayController {
 	public static final String KEY_PLAYER_UPDATE_VIEW = "PLAYER_UPDATE_VIEW";
 	public static final String KEY_PLAYER_PLAY_INFO = "PLAYER_PLAY_INFO";
 	public static final String KEY_PLAY_ITEM = "PLAY_ITEM";
+	public static final String KEY_AUDIO_SESSION_ID = "AUDIO_SESSION_ID";
 	
 	void play(Uri uri, int startPosition);
 
@@ -74,4 +77,6 @@ public interface PlayController {
 	void setPlayInfo(PlayInfo playInfo);
 
 	PlayController.PLAYER_STATE getState();
+
+	int getAudioSessionId();
 }

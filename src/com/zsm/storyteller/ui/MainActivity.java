@@ -2,17 +2,20 @@ package com.zsm.storyteller.ui;
 
 import java.util.List;
 
-import android.app.Activity;
 import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
+import android.media.AudioManager;
+import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.view.ViewPager;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -27,6 +30,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 import com.zsm.log.Log;
+import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
@@ -37,25 +41,25 @@ import com.zsm.storyteller.play.RemotePlayer;
 import com.zsm.storyteller.preferences.MainPreferenceFragment;
 import com.zsm.storyteller.preferences.Preferences;
 
-public class MainActivity extends Activity
+public class MainActivity extends FragmentActivity 
 				implements PlayerView, OnChildClickListener {
 
 	private ImageView playPause;
 	private TextView playingText;
 	private ExpandableListView playListView;
 	private MediaInfoListAdapter playListAdapter;
-	private MediaInfoView mediaInfoView;
 	private ImageView playOrderView;
 	private TimedProgressBar progressBar;
 	
 	private Drawable playIcon;
 	private Drawable pauseIcon;
 	
-//	private List<Uri> playList;
 	private PlayController player;
 	private BroadcastReceiver receiver;
 	private PLAYER_STATE playerState;
 	private Uri currentPlaying;
+	private MainFragmentPagerAdapter adapterViewPager;
+	private ViewPager viewPager;
 
 	public MainActivity() {
 		super();
@@ -71,9 +75,6 @@ public class MainActivity extends Activity
 		playingText = (TextView)findViewById( R.id.textViewPlayingFile );
 		
 		initListView();
-		
-		mediaInfoView = (MediaInfoView)findViewById( R.id.viewMediaInfo );
-		mediaInfoView.setVisibility( View.INVISIBLE );
 		
 		playIcon = getResources().getDrawable( R.drawable.play );
 		pauseIcon = getResources().getDrawable( R.drawable.pause );
@@ -94,12 +95,37 @@ public class MainActivity extends Activity
 		
 		registerPlayerViewReceiver();
 		
+		viewPager = (ViewPager) findViewById(R.id.viewInfoViewPager);
+		adapterViewPager
+			= new MainFragmentPagerAdapter(getSupportFragmentManager(),
+										   this,
+										   savedInstanceState );
+		
+		viewPager.setAdapter(adapterViewPager);
+		Log.d( adapterViewPager );
+		
 		new Thread( new Runnable() {
 			@Override
 			public void run() {
 				initPlayer();
 			}
 		}, "PlayerInit" ).start();
+		
+		setVolumeControlStream( AudioManager.STREAM_MUSIC );
+	}
+
+	private void initPlayer() {
+		Looper.prepare();
+		player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
+		playListAdapter.setPlayer(player);
+		PLAYER_STATE playerStateNow = player.getState();
+		Log.d( playerStateNow );
+		if( ( playerStateNow == null 
+				|| playerStateNow == PlayController.PLAYER_STATE.IDLE ) 
+			&& Preferences.getInstance().autoStartPlaying() ) {
+			
+			player.playPause();
+		}
 	}
 
 	private void initListView() {
@@ -174,31 +200,19 @@ public class MainActivity extends Activity
 		registerReceiver(receiver, filter);
 	}
 	
-	private void initPlayer() {
-		Looper.prepare();
-		player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
-		playListAdapter.setPlayer(player);
-		PLAYER_STATE playerStateNow = player.getState();
-		Log.d( playerStateNow );
-		if( ( playerStateNow == null 
-				|| playerStateNow == PlayController.PLAYER_STATE.IDLE ) 
-			&& Preferences.getInstance().autoStartPlaying() ) {
-			
-			player.playPause();
-		}
-	}
-
 	@Override
 	protected void onResume() {
 		super.onResume();
 		NotificationManagerCompat.from(this).cancel(PlayService.NOTIFICATION_ID);
 		PLAY_ORDER order = Preferences.getInstance().getPlayOrder();
 		setPlayOrderIcon(order);
+		setVisualizerEnabledByPlayerState(playerState);
 	}
 
 	private void setPlayOrderIcon(PLAY_ORDER order) {
 		playOrderView.setImageResource( 
 				MainPreferenceFragment.PLAY_ORDER_ICONS[ order.ordinal() ] );
+		setVisualizerEnabled( false );
 	}
 
 	@Override
@@ -216,7 +230,9 @@ public class MainActivity extends Activity
 
 	@Override
 	protected void onDestroy() {
+		Log.d(receiver);
 		unregisterReceiver(receiver);
+		receiver = null;
 		super.onDestroy();
 	}
 
@@ -283,29 +299,32 @@ public class MainActivity extends Activity
 	}
 
 	@Override
-	public void updatePlayerState(PlayController.PLAYER_STATE state) {
+	public void updatePlayerState(PLAYER_STATE state) {
 		playerState = state;
-		switch( state ) {
-			case STARTED:
-				playPause.setImageDrawable(pauseIcon);
-				break;
-			case PREPARED:
-			case STOPPED:
-			case PAUSED:
-				playPause.setImageDrawable(playIcon);
-				break;
-			default:
-				break;
+		boolean changeToStart = state == PLAYER_STATE.STARTED;
+		Drawable icon = changeToStart ? pauseIcon : playIcon;
+		playPause.setImageDrawable(icon);
+		setVisualizerEnabled(changeToStart);
+	}
+
+	private void setVisualizerEnabledByPlayerState( PLAYER_STATE state ) {
+		setVisualizerEnabled( state == PLAYER_STATE.STARTED );
+	}
+	
+	private void setVisualizerEnabled(boolean enabled) {
+		Visualizer v = adapterViewPager.getVisualizer();
+		if( v != null ) {
+			v.setEnabled( enabled );
 		}
 	}
 
 	@Override
 	public void setDataSource(Context context, Uri uri) {
 		this.currentPlaying = uri;
-		mediaInfoView.setDataSource(uri);
-		mediaInfoView.setVisibility( View.VISIBLE );
+		adapterViewPager.setDataSource( viewPager.getCurrentItem(), uri );
 		playingText.setText( uri.getLastPathSegment() );
-		progressBar.setDuration( (int) mediaInfoView.getMediaDuration() );
+		MediaInfo mi = new MediaInfo( context, uri );
+		progressBar.setDuration( mi.getDuration() );
 		updateNotification();
 		
 		int positionOf = playListAdapter.getPositionOf(uri);

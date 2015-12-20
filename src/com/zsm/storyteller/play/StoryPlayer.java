@@ -361,7 +361,7 @@ class StoryPlayer implements PlayController {
 	@Override
 	public void setPlayInfo(PlayInfo pi) {
 		playInfo = pi;
-		playInfo.getPlayList(StoryTellerApp.EXTENSION, true);
+		playInfo.getPlayList(StoryTellerApp.getAudioFileFilter(context), true);
 		updatePlayList( playInfo );
 		Uri currentPlaying = playInfo.refreshCurrentPlaying();
 		if( currentPlaying == null ) {
@@ -378,7 +378,7 @@ class StoryPlayer implements PlayController {
 	private PlayInfo getPlayInfoInner() {
 		if( playInfo == null ) {
 			playInfo = Preferences.getInstance().readPlayListInfo();
-			playInfo.getPlayList( StoryTellerApp.EXTENSION, true );
+			playInfo.getPlayList( StoryTellerApp.getAudioFileFilter(context), true );
 		}
 		
 		return playInfo;
@@ -387,5 +387,10 @@ class StoryPlayer implements PlayController {
 	@Override
 	public PLAYER_STATE getState() {
 		return playerState;
+	}
+
+	@Override
+	public int getAudioSessionId() {
+		return mediaPlayer.getAudioSessionId();
 	}
 }

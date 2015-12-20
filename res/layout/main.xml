@@ -134,14 +134,21 @@
         android:layout_below="@id/textViewPlayingFile"
         android:orientation="vertical" >
 
-        <com.zsm.storyteller.ui.MediaInfoView
-            android:id="@+id/viewMediaInfo"
+        <android.support.v4.view.ViewPager
+            android:id="@+id/viewInfoViewPager"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_margin="5dp"
-            android:layout_weight="1"
-            android:textAppearance="?android:attr/textAppearanceMedium" >
-        </com.zsm.storyteller.ui.MediaInfoView>
+            android:layout_weight="1" >
+            <android.support.v4.view.PagerTabStrip
+		        android:id="@+id/pagerHeaderInfo"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_gravity="top"
+		        android:paddingBottom="4dp"
+		        android:paddingTop="4dp" />
+            
+        </android.support.v4.view.ViewPager>
 
         <com.zsm.storyteller.ui.TimedProgressBar
             android:id="@+id/timedProgressBar"

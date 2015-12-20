@@ -17,22 +17,6 @@ import com.zsm.storyteller.PlayInfo;
 
 public class RemotePlayer implements PlayController {
 
-	private final class PlayerStateResultReceiver extends ResultReceiver {
-		private PLAYER_STATE state;
-
-		private PlayerStateResultReceiver(Handler handler) {
-			super(handler);
-		}
-
-		@Override
-		protected void onReceiveResult(int resultCode, Bundle resultData) {
-			String stateName
-				= resultData.getString( PlayController.KEY_PLAYER_STATE, "" );
-			state = PLAYER_STATE.valueOf(stateName);
-			playerSemaphore.release();
-		}
-	}
-
 	private Context context;
 	private Semaphore playerSemaphore = new Semaphore( 0 );
 	
@@ -137,17 +121,23 @@ public class RemotePlayer implements PlayController {
 	}
 
 	synchronized private PLAYER_STATE getPlayerStateNow() {
-		if( Looper.myLooper() == Looper.getMainLooper() ) {
-			IllegalStateException e = 
-					new IllegalStateException( 
-						"Cannot get player state from the service in the main thread!" );
-			Log.e( e );
-			throw e;
-		}
-		
 		PlayerStateResultReceiver rr = new PlayerStateResultReceiver(null);
+		receiveResultFromService( rr, PlayController.ACTION_GET_PLAYER_STATE );
+		return rr.state;
+	}
+
+	@Override
+	public int getAudioSessionId() {
+		AudioSessionIdResultReceiver rr = new AudioSessionIdResultReceiver( null );
+		receiveResultFromService( rr, PlayController.ACTION_GET_AUDIO_SESSION_ID );
+		return rr.sessionId;
+	}
+	
+	synchronized private void receiveResultFromService(ResultReceiver rr, String action) {
+		checkNotInMainThread();
+		
 		Intent intent = new Intent( context, PlayService.class );
-		intent.setAction( PlayController.ACTION_GET_PLAYER_STATE );
+		intent.setAction( action );
 		intent.putExtra( PlayController.KEY_PLAYER_RESULT_RECEIVER, rr );
 		PendingIntent pi
 			= PendingIntent.getService( context, REQUEST_RETRIEVE_CODE, intent, 0 );
@@ -156,8 +146,48 @@ public class RemotePlayer implements PlayController {
 			playerSemaphore.acquire();
 		} catch (CanceledException | InterruptedException e) {
 			Log.e( e, "Get player state failed!" );
-			return null;
 		}
-		return rr.state;
 	}
+	
+	private void checkNotInMainThread() {
+		if( Looper.myLooper() == Looper.getMainLooper() ) {
+			IllegalStateException e = 
+					new IllegalStateException( 
+						"Cannot get player state from the service in the main thread!" );
+			Log.e( e );
+			throw e;
+		}
+	}
+
+	private final class PlayerStateResultReceiver extends ResultReceiver {
+		private PLAYER_STATE state;
+
+		private PlayerStateResultReceiver(Handler handler) {
+			super(handler);
+		}
+
+		@Override
+		protected void onReceiveResult(int resultCode, Bundle resultData) {
+			String stateName
+				= resultData.getString( PlayController.KEY_PLAYER_STATE, "" );
+			state = PLAYER_STATE.valueOf(stateName);
+			playerSemaphore.release();
+		}
+	}
+
+	private final class AudioSessionIdResultReceiver extends ResultReceiver {
+		private int sessionId;
+
+		private AudioSessionIdResultReceiver(Handler handler) {
+			super(handler);
+		}
+
+		@Override
+		protected void onReceiveResult(int resultCode, Bundle resultData) {
+			sessionId
+				= resultData.getInt( PlayController.KEY_AUDIO_SESSION_ID, -1 );
+			playerSemaphore.release();
+		}
+	}
+
 }

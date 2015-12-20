@@ -2,5 +2,6 @@
 <resources>
     <color name="infoListSeparator">#808080</color>
     <color name="widgetBackground">#800F0F0F</color>
+    <color name="audioVisualizerBar">#0010FF</color>
     
 </resources>
