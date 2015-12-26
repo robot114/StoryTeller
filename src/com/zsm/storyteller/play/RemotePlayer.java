@@ -99,6 +99,21 @@ public class RemotePlayer implements PlayController {
 		return getPlayerStateNow();
 	}
 
+	@Override
+	public void setPlayPauseType(PLAY_PAUSE_TYPE type) {
+		Bundle bundle = new Bundle();
+		bundle.putString( KEY_PLAY_PAUSE_TYPE, type.name() );
+		sendRequest(ACTION_UPDATE_PLAY_PAUSE_TYPE, bundle);
+	}
+
+	@Override
+	public void enableCapture(String source, boolean enabled) {
+		Bundle bundle = new Bundle();
+		bundle.putBoolean( KEY_ENABLE_CAPTURE, enabled );
+		bundle.putString( KEY_CAPTURE_SOURCE, source );
+		sendRequest(ACTION_ENABLE_CAPTURE, bundle);
+	}
+
 	private void sendRequest(String action) {
 		sendRequest(action, null);
 	}
@@ -126,13 +141,6 @@ public class RemotePlayer implements PlayController {
 		return rr.state;
 	}
 
-	@Override
-	public int getAudioSessionId() {
-		AudioSessionIdResultReceiver rr = new AudioSessionIdResultReceiver( null );
-		receiveResultFromService( rr, PlayController.ACTION_GET_AUDIO_SESSION_ID );
-		return rr.sessionId;
-	}
-	
 	synchronized private void receiveResultFromService(ResultReceiver rr, String action) {
 		checkNotInMainThread();
 		
@@ -171,21 +179,6 @@ public class RemotePlayer implements PlayController {
 			String stateName
 				= resultData.getString( PlayController.KEY_PLAYER_STATE, "" );
 			state = PLAYER_STATE.valueOf(stateName);
-			playerSemaphore.release();
-		}
-	}
-
-	private final class AudioSessionIdResultReceiver extends ResultReceiver {
-		private int sessionId;
-
-		private AudioSessionIdResultReceiver(Handler handler) {
-			super(handler);
-		}
-
-		@Override
-		protected void onReceiveResult(int resultCode, Bundle resultData) {
-			sessionId
-				= resultData.getInt( PlayController.KEY_AUDIO_SESSION_ID, -1 );
 			playerSemaphore.release();
 		}
 	}

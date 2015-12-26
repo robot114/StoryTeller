@@ -1,14 +1,18 @@
 package com.zsm.storyteller.play;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -21,6 +25,7 @@ import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.storyteller.ui.PlayerView;
+import com.zsm.storyteller.ui.visualizer.VisualizeDataReceiver;
 
 class StoryPlayer implements PlayController {
 	
@@ -69,15 +74,26 @@ class StoryPlayer implements PlayController {
 	private Handler handler;
 
 	private boolean newStartFlag;
+	
+	private HashSet<String> captureSource = new HashSet<String>();
+	private PLAY_PAUSE_TYPE pausType;
+	private Visualizer audioCapture;
+	private AudioManager audioManager;
 
 	public StoryPlayer( Context context ) {
 		this.context = context;
+		audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+		pausType = Preferences.getInstance().getPlayPauseType();
 		handler = new Handler();
+		initPlayer(context);
+		notifyStateChanged();
+		newStartFlag = true;
+	}
+
+	private void initPlayer(Context context) {
 		mediaPlayer = new MediaPlayer();
 		mediaPlayer.reset();
-		
 		mediaPlayer.setWakeMode( context, PowerManager.PARTIAL_WAKE_LOCK );
-		
 		mediaPlayer.setOnErrorListener( new OnErrorListener() {
 			@Override
 			public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -101,14 +117,51 @@ class StoryPlayer implements PlayController {
 			}
 		} );
 		
-		notifyStateChanged();
-		newStartFlag = true;
+        int audioSessionId = mediaPlayer.getAudioSessionId();
+		audioCapture = new Visualizer(audioSessionId);
+		disableCaputre();
+        audioCapture.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);  
+		audioCapture.setDataCaptureListener(
+			new Visualizer.OnDataCaptureListener() {
+				public void onWaveFormDataCapture(Visualizer visualizer,
+						byte[] bytes, int samplingRate) {
+					listenToPlayer(bytes);
+				}
+
+				public void onFftDataCapture(Visualizer visualizer,
+						byte[] fft, int samplingRate) {
+					listenToPlayer(fft);
+				}
+			}, Visualizer.getMaxCaptureRate()/2, false, true);
+		enableCaptureByTypeAndState();
 	}
 
+	private void listenToPlayer( byte[] data ) {
+		int length = Math.min( data.length / 2 + 1, VisualizeDataReceiver.SPECTRUM_NUM );
+        byte[] model = new byte[length];  
+        
+        model[0] = (byte) Math.abs(data[0]);
+        final int curVolumeLevel
+        	= audioManager.getStreamVolume( AudioManager.STREAM_MUSIC );
+        final int maxVolumeLevel
+        	= audioManager.getStreamMaxVolume( AudioManager.STREAM_MUSIC );
+        final float volumeFactor
+        	= maxVolumeLevel / (curVolumeLevel == 0 ? maxVolumeLevel : curVolumeLevel);
+        
+        for (int i = 2, j = 1; j < length; j++ ) {  
+            model[j] = (byte) (Math.hypot(data[i], data[i + 1])*volumeFactor);  
+            i += 2;
+        }
+		Intent intent = new Intent( VisualizeDataReceiver.ACTION_UPDATE_VISUAL_DATA );
+		intent.putExtra( VisualizeDataReceiver.KEY_VISUAL_DATA, model );
+		context.sendBroadcast(intent);
+	}
+	
 	@Override
 	public void start(boolean updateView) {
 		mediaPlayer.start();
 		playerState = PLAYER_STATE.STARTED;
+		enableCaptureByTypeAndState();
 		if( updateView ) {
 			notifyStateChanged();
 		}
@@ -116,10 +169,18 @@ class StoryPlayer implements PlayController {
 
 	@Override
 	public void pause(boolean updateView) {
-		mediaPlayer.pause();
+		if( mediaPlayer.isPlaying() ) {
+			updateTime( mediaPlayer.getCurrentPosition(),
+						mediaPlayer.getDuration(), 0 );
+		}
 		playerState = PLAYER_STATE.PAUSED;
+		enableCaptureByTypeAndState();
+		mediaPlayer.pause();
 		if( updateView ) {
 			notifyStateChanged();
+			if( timeTimerTask != null ) {
+				timeTimerTask.state = TASK_STATE.PAUSE;
+			}
 		}
 	}
 	
@@ -130,6 +191,7 @@ class StoryPlayer implements PlayController {
 		mediaPlayer.start();
 		updateTime( cp, mediaPlayer.getDuration(), 0 );
 		playerState = PLAYER_STATE.STARTED;
+		enableCaptureByTypeAndState();
 		notifyStateChanged();
 		if( timeTimerTask == null ) {
 			timeTimerTask = new TimeTimerTask();
@@ -273,16 +335,7 @@ class StoryPlayer implements PlayController {
 	public void playPause() {
 		switch( playerState ) {
 			case STARTED:
-				mediaPlayer.pause();
-				playerState = PLAYER_STATE.PAUSED;
-				notifyStateChanged();
-				if( timeTimerTask != null ) {
-					timeTimerTask.state = TASK_STATE.PAUSE;
-				}
-				if( mediaPlayer.isPlaying() ) {
-					updateTime( mediaPlayer.getCurrentPosition(),
-								mediaPlayer.getDuration(), 0 );
-				}
+				pause( true );
 				break;
 			case STOPPED:
 			case IDLE:
@@ -390,7 +443,27 @@ class StoryPlayer implements PlayController {
 	}
 
 	@Override
-	public int getAudioSessionId() {
-		return mediaPlayer.getAudioSessionId();
+	public void setPlayPauseType(PLAY_PAUSE_TYPE type) {
+		this.pausType = type;
+	}
+
+	@Override
+	synchronized public void enableCapture(String source, boolean enabled) {
+		if( enabled ) {
+			captureSource.add(source);
+		} else {
+			captureSource.remove(source);
+		}
+		boolean shouldEnable
+			= ( playerState == PLAYER_STATE.STARTED && !captureSource.isEmpty() );
+		audioCapture.setEnabled( shouldEnable );
+	}
+
+	private void enableCaptureByTypeAndState() {
+		enableCapture( getClass().getName(), pausType == PLAY_PAUSE_TYPE.TO_PAUSE );
+	}
+	
+	synchronized public void disableCaputre() {
+		audioCapture.setEnabled( false );
 	}
 }

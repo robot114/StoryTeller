@@ -7,15 +7,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
-import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -29,17 +30,19 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
+import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.play.RemotePlayer;
 import com.zsm.storyteller.preferences.MainPreferenceFragment;
 import com.zsm.storyteller.preferences.Preferences;
+import com.zsm.storyteller.ui.visualizer.VisualizeDataListener;
+import com.zsm.storyteller.ui.visualizer.VisualizeDataReceiver;
 
 public class MainActivity extends FragmentActivity 
 				implements PlayerView, OnChildClickListener {
@@ -60,6 +63,7 @@ public class MainActivity extends FragmentActivity
 	private Uri currentPlaying;
 	private MainFragmentPagerAdapter adapterViewPager;
 	private ViewPager viewPager;
+	private VisualizeDataReceiver visualizeReceiver;
 
 	public MainActivity() {
 		super();
@@ -75,10 +79,7 @@ public class MainActivity extends FragmentActivity
 		playingText = (TextView)findViewById( R.id.textViewPlayingFile );
 		
 		initListView();
-		
-		playIcon = getResources().getDrawable( R.drawable.play );
-		pauseIcon = getResources().getDrawable( R.drawable.pause );
-		
+		initPlayIcons();
 		initProgressBar();
 		
 		playOrderView = (ImageView)findViewById( R.id.imageViewPlayOrder );
@@ -102,7 +103,25 @@ public class MainActivity extends FragmentActivity
 										   savedInstanceState );
 		
 		viewPager.setAdapter(adapterViewPager);
-		Log.d( adapterViewPager );
+		viewPager.setOnPageChangeListener(new OnPageChangeListener() {
+			
+			// This method will be invoked when a new page becomes selected.
+			@Override
+			public void onPageSelected(int position) {
+				setVisualizerEnabled( isVisualizerFragment( position ) );
+			}
+			
+			// This method will be invoked when the current page is scrolled
+			@Override
+			public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+			}
+			
+			// Called when the scroll state changes: 
+			// SCROLL_STATE_IDLE, SCROLL_STATE_DRAGGING, SCROLL_STATE_SETTLING
+			@Override
+			public void onPageScrollStateChanged(int state) {
+			}
+		});
 		
 		new Thread( new Runnable() {
 			@Override
@@ -119,13 +138,22 @@ public class MainActivity extends FragmentActivity
 		player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
 		playListAdapter.setPlayer(player);
 		PLAYER_STATE playerStateNow = player.getState();
-		Log.d( playerStateNow );
 		if( ( playerStateNow == null 
 				|| playerStateNow == PlayController.PLAYER_STATE.IDLE ) 
 			&& Preferences.getInstance().autoStartPlaying() ) {
 			
 			player.playPause();
 		}
+	}
+
+	private void initPlayIcons() {
+		Resources r = getResources();
+		boolean playContinuous
+			= Preferences.getInstance().getPlayPauseType()
+				== PLAY_PAUSE_TYPE.CONTINUOUS;
+		int playIconId = playContinuous ? R.drawable.play : R.drawable.play_to;
+		playIcon = r.getDrawable( playIconId);
+		pauseIcon = r.getDrawable( R.drawable.pause );
 	}
 
 	private void initListView() {
@@ -198,26 +226,34 @@ public class MainActivity extends FragmentActivity
 		registerReceiver(receiver, filter);
 		filter = new IntentFilter(PlayerView.ACTION_UPDATE_PLAY_INFO);
 		registerReceiver(receiver, filter);
+		filter = new IntentFilter(PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE);
+		registerReceiver(receiver, filter);
 	}
 	
 	@Override
 	protected void onResume() {
 		super.onResume();
 		NotificationManagerCompat.from(this).cancel(PlayService.NOTIFICATION_ID);
-		PLAY_ORDER order = Preferences.getInstance().getPlayOrder();
-		setPlayOrderIcon(order);
-		setVisualizerEnabledByPlayerState(playerState);
+		Preferences preferences = Preferences.getInstance();
+		setPlayOrderIcon(preferences.getPlayOrder());
+		if( isVisualizerFragment(viewPager.getCurrentItem()) ) {
+			setVisualizerEnabled( true );
+		}
+	}
+
+	private boolean isVisualizerFragment(int currentPosition) {
+		return currentPosition == MainFragmentPagerAdapter.VISUALIZER_POSITION;
 	}
 
 	private void setPlayOrderIcon(PLAY_ORDER order) {
 		playOrderView.setImageResource( 
 				MainPreferenceFragment.PLAY_ORDER_ICONS[ order.ordinal() ] );
-		setVisualizerEnabled( false );
 	}
 
 	@Override
 	protected void onPause() {
 		updateNotification();
+		setVisualizerEnabled( false );
 		super.onPause();
 	}
 
@@ -230,9 +266,15 @@ public class MainActivity extends FragmentActivity
 
 	@Override
 	protected void onDestroy() {
-		Log.d(receiver);
 		unregisterReceiver(receiver);
 		receiver = null;
+		if( visualizeReceiver != null && visualizeReceiver.isRegistered() ) {
+			visualizeReceiver.unregisterMe( this );
+		}
+		visualizeReceiver = null;
+		if( isVisualizerFragment(viewPager.getCurrentItem()) ) {
+			setVisualizerEnabled( false );
+		}
 		super.onDestroy();
 	}
 
@@ -246,11 +288,13 @@ public class MainActivity extends FragmentActivity
 	}
 	
 	public void onOpenOne( View v ) {
-		((StoryTellerApp)getApplication()).getPlayFileHandler().openOne(this, player);
+		((StoryTellerApp)getApplication())
+			.getPlayFileHandler().openOne(this, player);
 	}
 	
 	public void onOpenFolder( View v ) {
-		((StoryTellerApp)getApplication()).getPlayFileHandler().openFolder( this, player );
+		((StoryTellerApp)getApplication())
+			.getPlayFileHandler().openFolder( this, player );
 	}
 	
 	public void onPlayPause( View v ) {
@@ -301,20 +345,25 @@ public class MainActivity extends FragmentActivity
 	@Override
 	public void updatePlayerState(PLAYER_STATE state) {
 		playerState = state;
-		boolean changeToStart = state == PLAYER_STATE.STARTED;
-		Drawable icon = changeToStart ? pauseIcon : playIcon;
-		playPause.setImageDrawable(icon);
-		setVisualizerEnabled(changeToStart);
+		updatePlayPauseIcon(state);
 	}
 
-	private void setVisualizerEnabledByPlayerState( PLAYER_STATE state ) {
-		setVisualizerEnabled( state == PLAYER_STATE.STARTED );
-	}
-	
-	private void setVisualizerEnabled(boolean enabled) {
-		Visualizer v = adapterViewPager.getVisualizer();
-		if( v != null ) {
-			v.setEnabled( enabled );
+	private void setVisualizerEnabled(final boolean enabled) {
+		String captureSource = VisualizeDataReceiver.class.getName();
+		if( enabled ) {
+			if( visualizeReceiver == null ) {
+				VisualizeDataListener vl
+					= (VisualizeDataListener) adapterViewPager
+							.getItem( MainFragmentPagerAdapter.VISUALIZER_POSITION );
+				visualizeReceiver = new VisualizeDataReceiver( vl );
+			}
+			visualizeReceiver.registerMe( this );
+			player.enableCapture( captureSource, enabled );
+		} else {
+			if( visualizeReceiver != null ) {
+				visualizeReceiver.unregisterMe( this );
+				player.enableCapture( captureSource, enabled );
+			}
 		}
 	}
 
@@ -347,6 +396,26 @@ public class MainActivity extends FragmentActivity
 	public void updatePlayList(List<Uri> playList) {
 		playListAdapter.setData( playList );
 		playListAdapter.notifyDataSetChanged();
+	}
+
+	@Override
+	public void updatePlayPauseType(Context context, PLAY_PAUSE_TYPE type) {
+		updatePlayPauseType(type);
+	}
+
+	private void updatePlayPauseType(PLAY_PAUSE_TYPE type) {
+		int iconId
+			= ( type == PLAY_PAUSE_TYPE.CONTINUOUS )
+				? R.drawable.play : R.drawable.play_to;
+		
+		playIcon = getResources().getDrawable( iconId );
+		updatePlayPauseIcon(playerState);
+	}
+	
+	private void updatePlayPauseIcon(PLAYER_STATE state) {
+		boolean changeToStart = state == PLAYER_STATE.STARTED;
+		Drawable icon = changeToStart ? pauseIcon : playIcon;
+		playPause.setImageDrawable(icon);
 	}
 
 }

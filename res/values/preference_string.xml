@@ -11,8 +11,12 @@
     <string name="prefSkipHeaderLengthDesc">Length of the header to skip</string>
     <string name="prefSkipHeaderLength">Header Length</string>
     <string name="prefSkipHeader">Skip Header by %d Sec Automatically</string>
+    <string name="prefKeyPlayOrder">PLAY_ORDER</string>
     <string name="prefPlayOrderByName">By Name</string>
     <string name="prefPlayOrderRandom">Random</string>
-    <string name="prefKeyPlayOrder">PLAY_ORDER</string>
+    <string name="prefKeyPlayTypeToPause">PLAY_TYPE</string>
+    <string name="prefPlayTypeContinuously">Play continuously</string>
+    <string name="prefPlayTypeToPause">Pause at each pause</string>
+    <string name="prefTitlePlayTypeToPause">When to pause</string>
     
 </resources>

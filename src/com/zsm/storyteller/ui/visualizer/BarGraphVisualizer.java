@@ -41,7 +41,8 @@ public class BarGraphVisualizer implements VisualizerDrawer<Canvas> {
 
         //»æÖÆÆµÆ×  
         final int baseX = rectOfView.width()/fft.length;  
-        final int height = rectOfView.height();  
+        final int height = rectOfView.height();
+        final float factor = height / 128.0f;
 
         for (int i = 0; i < fft.length ; i++) {  
             if (fft[i] < 0) {  
@@ -54,7 +55,7 @@ public class BarGraphVisualizer implements VisualizerDrawer<Canvas> {
             points[i * 4 + 1] = height;  
               
             points[i * 4 + 2] = xi;  
-            points[i * 4 + 3] = height - fft[i];  
+            points[i * 4 + 3] = height - fft[i]*factor;  
         }  
 
         canvas.save();

@@ -2,20 +2,19 @@ package com.zsm.storyteller.ui;
 
 import java.util.List;
 
-import com.zsm.storyteller.R;
-
 import android.content.Context;
-import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 
+import com.zsm.storyteller.R;
+
 public class MainFragmentPagerAdapter extends FragmentPagerAdapter {
 
-	private static final int MEDIA_INFO_POSITION = 0;
-	private static final int VISUALIZER_POSITION = 1;
+	public static final int MEDIA_INFO_POSITION = 0;
+	public static final int VISUALIZER_POSITION = 1;
 	private static final int[] PAGE_TITLE_RESID
 		= { R.string.pageTitleMediaInfo, R.string.pageTitleVisualizer };
 	
@@ -67,10 +66,4 @@ public class MainFragmentPagerAdapter extends FragmentPagerAdapter {
 			mif.setDataSource( uri );
 		}
 	}
-
-	public Visualizer getVisualizer() {
-		VisualizerFragment vf = (VisualizerFragment) getItem(VISUALIZER_POSITION);
-		return vf.getVisualizer();
-	}
-
 }

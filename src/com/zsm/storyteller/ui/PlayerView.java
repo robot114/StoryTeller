@@ -5,9 +5,12 @@ import java.util.List;
 import android.content.Context;
 import android.net.Uri;
 
-import com.zsm.storyteller.play.PlayController;
+import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
+import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 
 public interface PlayerView {
+	
+	public final static int PLAYER_VIEW_REQUEST_ID = 100;
 	
 	public final static String ACTION_UPDATE_ELLAPSED_TIME
 		= "com.zsm.storyteller.PLAYER_VIEW.UPDATE_ELLAPSED_TIME";
@@ -23,13 +26,14 @@ public interface PlayerView {
 	public static final String KEY_PLAYER_STATE = "PLAY_STATE";
 	public static final String KEY_DATA_SOURCE = "DATA_SOURCE";
 	public static final String KEY_PLAY_INFO = "PLAY_LIST";
-
+	
 	void updateTime(int curretPosition, int duration);
 
-	void updatePlayerState(PlayController.PLAYER_STATE state);
+	void updatePlayerState(PLAYER_STATE state);
 
 	void setDataSource(Context context, Uri uri);
 
 	void updatePlayList(List<Uri> playList);
 
+	void updatePlayPauseType(Context context, PLAY_PAUSE_TYPE type);
 }

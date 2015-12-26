@@ -33,6 +33,7 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_PLAYER_STATE"/>
+                <action android:name="com.zsm.storyteller.PLAYER.UPDATE_PLAY_PAUSE_TYPE"/>
                 <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_ELLAPSED_TIME"/>
                 <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_DATA_SOURCE"/>
             </intent-filter>
@@ -59,7 +60,7 @@
                 <action android:name="com.zsm.storyteller.PLAYER.GET_STATE"/>
                 </intent-filter>
         </service>
-        <receiver android:name=".play.PlayControllerReceiver">
+        <receiver android:name=".play.MediaButtonReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON"/>
             </intent-filter>

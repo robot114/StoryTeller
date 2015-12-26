@@ -9,6 +9,7 @@ public interface PlayController {
 		IDLE, INITIALIZED, PREPARED, STARTED, PAUSED, STOPPED, PLAYBACKCOMPLETED }
 	
 	public enum PLAY_ORDER { BY_NAME, RANDOM }
+	public enum PLAY_PAUSE_TYPE { CONTINUOUS, TO_PAUSE }
 
 	public static final String ACTION_PLAYER_PLAY_PAUSE
 		= "com.zsm.storyteller.PLAYER.PLAY_PAUSE";
@@ -38,19 +39,23 @@ public interface PlayController {
 		= "com.zsm.storyteller.PLAYER.EMPTY_ACTION";
 	public static final String ACTION_GET_PLAYER_STATE
 		= "com.zsm.storyteller.PLAYER.GET_STATE";
-	public static final String ACTION_GET_AUDIO_SESSION_ID
-		= "com.zsm.storyteller.PLAYER.GET_AUDIO_SESSION_ID";
+	public final static String ACTION_UPDATE_PLAY_PAUSE_TYPE
+		= "com.zsm.storyteller.PLAYER.UPDATE_PLAY_PAUSE_TYPE";
+	public final static String ACTION_ENABLE_CAPTURE
+		= "com.zsm.storyteller.PLAYER.ENABLE_CAPTURE";
 	
 	public static final int REQUEST_RETRIEVE_CODE = 100;
 	public static final int REQUEST_PLAY_CODE = 101;
 
 	public static final String KEY_PLAYER_STATE = "PLAYER_STATE";
+	public static final String KEY_PLAY_PAUSE_TYPE = "PLAY_PAUSE_TYPE";
 	public static final String KEY_PLAYER_RESULT_RECEIVER = "PLAYER_RESULT_RECEIVER";
 	public static final String KEY_MEDIA_POSITION = "MEDIA_POSITION";
 	public static final String KEY_PLAYER_UPDATE_VIEW = "PLAYER_UPDATE_VIEW";
 	public static final String KEY_PLAYER_PLAY_INFO = "PLAYER_PLAY_INFO";
 	public static final String KEY_PLAY_ITEM = "PLAY_ITEM";
-	public static final String KEY_AUDIO_SESSION_ID = "AUDIO_SESSION_ID";
+	public static final String KEY_ENABLE_CAPTURE = "ENABLE_CAPTURE";
+	public static final String KEY_CAPTURE_SOURCE = "CAPTURE_SOURCE";
 	
 	void play(Uri uri, int startPosition);
 
@@ -78,5 +83,7 @@ public interface PlayController {
 
 	PlayController.PLAYER_STATE getState();
 
-	int getAudioSessionId();
+	void setPlayPauseType(PLAY_PAUSE_TYPE type);
+
+	void enableCapture(String source, boolean enabled);
 }

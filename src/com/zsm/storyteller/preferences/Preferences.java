@@ -1,16 +1,16 @@
 package com.zsm.storyteller.preferences;
 
-import com.zsm.log.Log;
-import com.zsm.storyteller.PlayInfo;
-import com.zsm.storyteller.R;
-import com.zsm.storyteller.play.PlayController;
-import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.preference.PreferenceManager;
+
+import com.zsm.log.Log;
+import com.zsm.storyteller.PlayInfo;
+import com.zsm.storyteller.R;
+import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
+import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 
 public class Preferences {
 
@@ -41,6 +41,7 @@ public class Preferences {
 	private static final String KEY_AUTO_START_PLAYING = "AUTO_START_PLAYING";
 	
 	public static String KEY_PLAY_ORDER = null;
+	public static String KEY_PLAY_TYPE_TO_PAUSE = null;
 	
 	private Preferences( Context context ) {
 		preferences
@@ -64,6 +65,7 @@ public class Preferences {
 	static private void initKeys( Context context ) {
 		Resources r = context.getResources();
 		KEY_PLAY_ORDER = r.getString( R.string.prefKeyPlayOrder );
+		KEY_PLAY_TYPE_TO_PAUSE = r.getString( R.string.prefKeyPlayTypeToPause );
 	}
 	
 	static public Preferences getInstance() {
@@ -228,12 +230,36 @@ public class Preferences {
 	public PLAY_ORDER getPlayOrder() {
 		String orderName
 			= preferences.getString(KEY_PLAY_ORDER, PLAY_ORDER.BY_NAME.name() );
-		PLAY_ORDER order = PLAY_ORDER.valueOf(orderName);
+		
+		PLAY_ORDER order = null;
+		try {
+			order = PLAY_ORDER.valueOf(orderName);
+		} catch( Exception e) {
+			Log.e( e );
+		}
 		
 		return order == null ? PLAY_ORDER.BY_NAME : order;
 	}
 	
 	public void setPlayOrder( PLAY_ORDER order ) {
 		preferences.edit().putString(KEY_PLAY_ORDER, order.name() ).commit();
+	}
+
+	public PLAY_PAUSE_TYPE getPlayPauseType() {
+		String typeName
+			= preferences.getString(KEY_PLAY_TYPE_TO_PAUSE,
+									PLAY_PAUSE_TYPE.CONTINUOUS.name() );
+		PLAY_PAUSE_TYPE type = null;
+		try {
+			type = PLAY_PAUSE_TYPE.valueOf(typeName);
+		} catch ( Exception e ) {
+			Log.e( e );
+		}
+		
+		return type == null ? PLAY_PAUSE_TYPE.CONTINUOUS : type;
+	}
+	
+	public void setPlayTypeToPause( PLAY_PAUSE_TYPE type ) {
+		preferences.edit().putString(KEY_PLAY_TYPE_TO_PAUSE, type.name() ).commit();
 	}
 }

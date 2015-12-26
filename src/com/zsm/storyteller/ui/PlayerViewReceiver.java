@@ -4,9 +4,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
+import com.zsm.android.util.IntentUtil;
 import com.zsm.log.Log;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.play.PlayController;
+import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
+import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 
 public class PlayerViewReceiver {
 
@@ -20,16 +23,22 @@ public class PlayerViewReceiver {
 	public boolean onReceive(Context context, Intent intent) {
 		switch( intent.getAction() ) {
 			case PlayerView.ACTION_UPDATE_PLAYER_STATE:
-				String stateStr
-					= intent.getStringExtra( PlayerView.KEY_PLAYER_STATE );
-				PlayController.PLAYER_STATE state; 
-				try {
-					state = PlayController.PLAYER_STATE.valueOf( stateStr );
-				} catch ( Exception e ) {
-					Log.e( e, "Invalid state", stateStr );
-					break;
+				PLAYER_STATE state
+					= IntentUtil.getEnumValueIntent(
+							intent, PlayerView.KEY_PLAYER_STATE,
+							PLAYER_STATE.class, null);
+				if( state != null ) {
+					view.updatePlayerState( state );
 				}
-				view.updatePlayerState( state );
+				break;
+			case PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE:
+				PLAY_PAUSE_TYPE type
+					=  IntentUtil.getEnumValueIntent(
+							intent, PlayController.KEY_PLAY_PAUSE_TYPE,
+							PLAY_PAUSE_TYPE.class, null);
+				if( type != null ) {
+					view.updatePlayPauseType( context, type );
+				}
 				break;
 			case PlayerView.ACTION_UPDATE_DATA_SOURCE:
 				Uri uri = (Uri)intent.getParcelableExtra(PlayerView.KEY_DATA_SOURCE);
@@ -45,7 +54,6 @@ public class PlayerViewReceiver {
 				break;
 			case PlayerView.ACTION_UPDATE_PLAY_INFO:
 				PlayInfo pi = intent.getParcelableExtra( PlayerView.KEY_PLAY_INFO );
-				Log.d(pi);
 				view.updatePlayList( pi.getCurrentPlayList() );
 				break;
 			default:
@@ -55,5 +63,4 @@ public class PlayerViewReceiver {
 		
 		return true;
 	}
-
 }

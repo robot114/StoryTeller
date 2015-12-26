@@ -10,14 +10,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.Uri;
+import android.os.Handler;
 import android.os.IBinder;
 import android.widget.RemoteViews;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
+import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.PlayController;
+import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
+import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 import com.zsm.storyteller.play.PlayService;
+import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.util.TextUtil;
 
 public class StoryTellerAppWidgetProvider extends AppWidgetProvider
@@ -25,9 +30,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 
 	private PlayerViewReceiver playerViewReceiver;
 	private RemoteViews remoteViews;
-	private boolean serviceStarted;
-	private PlayService playService;
-
+	
 	public StoryTellerAppWidgetProvider() {
 		playerViewReceiver = new PlayerViewReceiver( this );
 	}
@@ -36,10 +39,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager,
 						 int[] appWidgetIds) {
 		
-		if( !serviceStarted ) {
-			startService( context );
-			serviceStarted = true;
-		}
+		startService( context );
 		addClickEvent(context, appWidgetManager, appWidgetIds,
         			  PlayController.ACTION_PLAYER_PLAY_PAUSE,
         			  R.id.imageViewWidgetPlay);
@@ -62,12 +62,11 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		    public void onServiceConnected(ComponentName name, IBinder service) {
 		    	Log.d("Service connected", service);
 		        PlayService.ServiceBinder binder = (PlayService.ServiceBinder) service;
-		        playService = binder.getService();
+		        binder.getService();
 		    }
 		 
 		    @Override
 		    public void onServiceDisconnected(ComponentName name) {
-		    	playService = null;
 		    }
 
 		};
@@ -98,10 +97,20 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		remoteViews = new RemoteViews(context.getPackageName(), R.layout.main_widget);
+		if( PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE
+					.equals( intent.getAction() ) ) {
+			
+			// updatePlayPauseType is an asychronize method
+			playerViewReceiver.onReceive(context, intent);
+			return;
+		}
+		Log.d( intent );
+		remoteViews
+			= new RemoteViews(context.getPackageName(), R.layout.main_widget);
 		AppWidgetManager appWidgetManager
 			= AppWidgetManager.getInstance(context.getApplicationContext());
-		ComponentName widgets = new ComponentName(context, StoryTellerAppWidgetProvider.class);
+		ComponentName widgets
+			= new ComponentName(context, StoryTellerAppWidgetProvider.class);
 	    int[] allWidgetIds = appWidgetManager.getAppWidgetIds(widgets);
 
 		
@@ -123,22 +132,9 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	}
 
 	@Override
-	public void updatePlayerState(PlayController.PLAYER_STATE state) {
-    	switch( state ) {
-			case STARTED:
-				remoteViews.setImageViewResource( R.id.imageViewWidgetPlay,
-												  R.drawable.widget_pause);
-				break;
-			case IDLE:
-			case PREPARED:
-			case STOPPED:
-			case PAUSED:
-				remoteViews.setImageViewResource( R.id.imageViewWidgetPlay,
-												  R.drawable.widget_play);
-				break;
-			default:
-				break;
-    	}
+	public void updatePlayerState(PLAYER_STATE state) {
+		setPlayPauseIcon(remoteViews, state,
+						 Preferences.getInstance().getPlayPauseType());
 	}
 
 	@Override
@@ -152,4 +148,41 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void updatePlayPauseType(final Context context,
+									final PLAY_PAUSE_TYPE type) {
+		new Handler().post( new Runnable() {
+			@Override
+			public void run() {
+				RemoteViews rvs
+					= new RemoteViews(context.getPackageName(),
+									  R.layout.main_widget);
+				AppWidgetManager appWidgetManager
+					= AppWidgetManager.getInstance(context.getApplicationContext());
+				ComponentName widgets
+					= new ComponentName(context, StoryTellerAppWidgetProvider.class);
+			    int[] allWidgetIds = appWidgetManager.getAppWidgetIds(widgets);
+				StoryTellerApp app
+					= (StoryTellerApp) context.getApplicationContext();
+				setPlayPauseIcon(rvs, app.getPlayer().getState(), type );
+		        appWidgetManager.updateAppWidget(allWidgetIds, rvs);
+				rvs = null;
+			}
+		} );
+	}
+	
+	private void setPlayPauseIcon(RemoteViews rvs, PLAYER_STATE state,
+								  PLAY_PAUSE_TYPE pauseType) {
+		
+		int playIconId
+			= ( pauseType == PLAY_PAUSE_TYPE.CONTINUOUS )
+				? R.drawable.widget_play : R.drawable.widget_play_to;
+		playIconId
+			= (state == PLAYER_STATE.STARTED )
+				? R.drawable.widget_pause : playIconId;
+		
+		rvs.setImageViewResource( R.id.imageViewWidgetPlay, playIconId );
+	}
+
 }

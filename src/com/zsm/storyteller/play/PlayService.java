@@ -20,6 +20,7 @@ import android.support.v7.app.NotificationCompat;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
+import com.zsm.android.util.IntentUtil;
 import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.PlayInfo;
@@ -34,7 +35,7 @@ public class PlayService extends Service
 	public static final int NOTIFICATION_ID = 1;
 	
 	private IBinder binder = null;
-	private PlayController player;
+	private StoryPlayer player;
 	private Notification notification;
 	
 	private PlayControllerReceiver receiver;
@@ -60,15 +61,18 @@ public class PlayService extends Service
 		notification = buildNotification( this, playInfo.refreshCurrentPlaying() );
 		startForeground(NOTIFICATION_ID, notification);
 		
-		receiver = new PlayControllerReceiver();
+		receiver = new PlayControllerReceiver( this );
 		IntentFilter filter
 			= new IntentFilter( AudioManager.ACTION_AUDIO_BECOMING_NOISY );
+		registerReceiver( receiver, filter);
+		filter
+			= new IntentFilter( PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE );
 		registerReceiver( receiver, filter);
 		
 		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 		buttonReceiverCompName
 			= new ComponentName( getPackageName(), 
-								 PlayControllerReceiver.class.getName() );
+								 MediaButtonReceiver.class.getName() );
 		audioManager.registerMediaButtonEventReceiver(buttonReceiverCompName);
 	}
 
@@ -84,6 +88,7 @@ public class PlayService extends Service
 		remoteViews.setImageViewResource( R.id.imageViewWidgetPlay,
 				  						  R.drawable.widget_play);
 		appWidgetManager.updateAppWidget(allWidgetIds, remoteViews);
+		player.disableCaputre();
 	}
 
 	private PlayInfo initPlayer() {
@@ -108,7 +113,7 @@ public class PlayService extends Service
 	}
 
 	@Override
-	public void onDestroy() {
+	synchronized public void onDestroy() {
 		unregisterReceiver(receiver);
 		receiver = null;
 		audioManager.unregisterMediaButtonEventReceiver(buttonReceiverCompName);
@@ -292,9 +297,24 @@ public class PlayService extends Service
 			case ACTION_GET_PLAYER_STATE:
 				giveStateBack( intent );
 				break;
-			case ACTION_GET_AUDIO_SESSION_ID:
-				giveAudioSessionIdBack( intent );
+			case ACTION_UPDATE_PLAY_PAUSE_TYPE:
+				PLAY_PAUSE_TYPE type
+					= IntentUtil.getEnumValueIntent(
+							intent, KEY_PLAY_PAUSE_TYPE, PLAY_PAUSE_TYPE.class, null);
+				if( type != null ) {
+					player.setPlayPauseType(type);
+				}
 				break;
+			case ACTION_ENABLE_CAPTURE:
+				if( intent.hasExtra(KEY_ENABLE_CAPTURE) ) {
+					boolean enabled
+						= intent.getBooleanExtra(KEY_ENABLE_CAPTURE, false );
+					String source = intent.getStringExtra( KEY_CAPTURE_SOURCE );
+					player.enableCapture( source, enabled );
+				}
+				break;
+			case AudioManager.ACTION_AUDIO_BECOMING_NOISY:
+				player.pause( true );
 			default:
 				Log.w( "Unsupported action type", intent );
 				break;
@@ -317,13 +337,6 @@ public class PlayService extends Service
 		ResultReceiver rr = extractResultReceiver(intent);
 		Bundle b = new Bundle();
 		b.putString( KEY_PLAYER_STATE, player.getState().name() );
-		rr.send( REQUEST_RETRIEVE_CODE, b );
-	}
-
-	private void giveAudioSessionIdBack(Intent intent) {
-		ResultReceiver rr = extractResultReceiver(intent);
-		Bundle b = new Bundle();
-		b.putInt( KEY_AUDIO_SESSION_ID, player.getAudioSessionId() );
 		rr.send( REQUEST_RETRIEVE_CODE, b );
 	}
 
@@ -385,7 +398,12 @@ public class PlayService extends Service
 	}
 
 	@Override
-	public int getAudioSessionId() {
-		return player.getAudioSessionId();
+	public void setPlayPauseType(PLAY_PAUSE_TYPE type) {
+		player.setPlayPauseType(type);
+	}
+
+	@Override
+	public void enableCapture(String source, boolean enabled) {
+		player.enableCapture(source, enabled);
 	}
 }
