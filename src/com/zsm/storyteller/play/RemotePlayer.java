@@ -1,5 +1,7 @@
 package com.zsm.storyteller.play;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import android.app.PendingIntent;
@@ -100,13 +102,6 @@ public class RemotePlayer implements PlayController {
 	}
 
 	@Override
-	public void setPlayPauseType(PLAY_PAUSE_TYPE type) {
-		Bundle bundle = new Bundle();
-		bundle.putString( KEY_PLAY_PAUSE_TYPE, type.name() );
-		sendRequest(ACTION_UPDATE_PLAY_PAUSE_TYPE, bundle);
-	}
-
-	@Override
 	public void enableCapture(String source, boolean enabled) {
 		Bundle bundle = new Bundle();
 		bundle.putBoolean( KEY_ENABLE_CAPTURE, enabled );
@@ -182,5 +177,4 @@ public class RemotePlayer implements PlayController {
 			playerSemaphore.release();
 		}
 	}
-
 }

@@ -7,11 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.zsm.storyteller.R;
+import com.zsm.storyteller.play.AudioDataListener;
 import com.zsm.storyteller.ui.visualizer.BarGraphVisualizer;
-import com.zsm.storyteller.ui.visualizer.VisualizeDataListener;
 import com.zsm.storyteller.ui.visualizer.VisualizerView;
 
-public class VisualizerFragment extends Fragment implements VisualizeDataListener {
+public class VisualizerFragment extends Fragment implements AudioDataListener {
 
 	private View view;
 	private VisualizerView mVisualizerView;

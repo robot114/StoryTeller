@@ -39,6 +39,9 @@ public class Preferences {
 	private static final String KEY_SKIP_HEADER = "SKIP_HEADER";
 	private static final String KEY_SKIP_HEADER_SECOND = "SKIP_HEADER_SECOND";
 	private static final String KEY_AUTO_START_PLAYING = "AUTO_START_PLAYING";
+	private static final String KEY_MAX_SILENCE_TIMES_TO_PAUSE
+									= "MAX_SILENCE_TIMES_TO_PAUSE";
+	private static final String KEY_SILENCE_TOILENCE = "SILENCE_TOILENCE";
 	
 	public static String KEY_PLAY_ORDER = null;
 	public static String KEY_PLAY_TYPE_TO_PAUSE = null;
@@ -261,5 +264,13 @@ public class Preferences {
 	
 	public void setPlayTypeToPause( PLAY_PAUSE_TYPE type ) {
 		preferences.edit().putString(KEY_PLAY_TYPE_TO_PAUSE, type.name() ).commit();
+	}
+	
+	public int getMaxSilenceTimesToPause() {
+		return preferences.getInt( KEY_MAX_SILENCE_TIMES_TO_PAUSE, 2 );
+	}
+
+	public int getSilenceToilence() {
+		return preferences.getInt( KEY_SILENCE_TOILENCE, 5 );
 	}
 }

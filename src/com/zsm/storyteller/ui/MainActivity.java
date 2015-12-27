@@ -39,10 +39,10 @@ import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.play.RemotePlayer;
+import com.zsm.storyteller.play.AudioDataListener;
+import com.zsm.storyteller.play.AudioDataReceiver;
 import com.zsm.storyteller.preferences.MainPreferenceFragment;
 import com.zsm.storyteller.preferences.Preferences;
-import com.zsm.storyteller.ui.visualizer.VisualizeDataListener;
-import com.zsm.storyteller.ui.visualizer.VisualizeDataReceiver;
 
 public class MainActivity extends FragmentActivity 
 				implements PlayerView, OnChildClickListener {
@@ -63,7 +63,7 @@ public class MainActivity extends FragmentActivity
 	private Uri currentPlaying;
 	private MainFragmentPagerAdapter adapterViewPager;
 	private ViewPager viewPager;
-	private VisualizeDataReceiver visualizeReceiver;
+	private AudioDataReceiver visualizeReceiver;
 
 	public MainActivity() {
 		super();
@@ -349,13 +349,13 @@ public class MainActivity extends FragmentActivity
 	}
 
 	private void setVisualizerEnabled(final boolean enabled) {
-		String captureSource = VisualizeDataReceiver.class.getName();
+		String captureSource = AudioDataReceiver.class.getName();
 		if( enabled ) {
 			if( visualizeReceiver == null ) {
-				VisualizeDataListener vl
-					= (VisualizeDataListener) adapterViewPager
+				AudioDataListener vl
+					= (AudioDataListener) adapterViewPager
 							.getItem( MainFragmentPagerAdapter.VISUALIZER_POSITION );
-				visualizeReceiver = new VisualizeDataReceiver( vl );
+				visualizeReceiver = new AudioDataReceiver( vl );
 			}
 			visualizeReceiver.registerMe( this );
 			player.enableCapture( captureSource, enabled );

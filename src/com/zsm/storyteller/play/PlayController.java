@@ -83,7 +83,5 @@ public interface PlayController {
 
 	PlayController.PLAYER_STATE getState();
 
-	void setPlayPauseType(PLAY_PAUSE_TYPE type);
-
 	void enableCapture(String source, boolean enabled);
 }

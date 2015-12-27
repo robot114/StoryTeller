@@ -12,6 +12,7 @@ import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 public class PlayControllerReceiver extends BroadcastReceiver {
 
 	private PlayController player;
+	private PLAY_PAUSE_TYPE pauseType;
 
 	public PlayControllerReceiver( PlayController player ) {
 		this.player = player;
@@ -31,7 +32,7 @@ public class PlayControllerReceiver extends BroadcastReceiver {
 												PLAY_PAUSE_TYPE.class,
 												null );
 			if( type != null ) {
-				player.setPlayPauseType( type );
+				pauseType = type;
 			}
 		}
 	}

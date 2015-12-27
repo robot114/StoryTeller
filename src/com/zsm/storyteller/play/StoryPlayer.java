@@ -1,7 +1,6 @@
 package com.zsm.storyteller.play;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 
 import android.annotation.SuppressLint;
@@ -25,7 +24,6 @@ import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.storyteller.ui.PlayerView;
-import com.zsm.storyteller.ui.visualizer.VisualizeDataReceiver;
 
 class StoryPlayer implements PlayController {
 	
@@ -76,14 +74,12 @@ class StoryPlayer implements PlayController {
 	private boolean newStartFlag;
 	
 	private HashSet<String> captureSource = new HashSet<String>();
-	private PLAY_PAUSE_TYPE pausType;
 	private Visualizer audioCapture;
 	private AudioManager audioManager;
 
 	public StoryPlayer( Context context ) {
 		this.context = context;
 		audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
-		pausType = Preferences.getInstance().getPlayPauseType();
 		handler = new Handler();
 		initPlayer(context);
 		notifyStateChanged();
@@ -132,12 +128,12 @@ class StoryPlayer implements PlayController {
 						byte[] fft, int samplingRate) {
 					listenToPlayer(fft);
 				}
-			}, Visualizer.getMaxCaptureRate()/2, false, true);
-		enableCaptureByTypeAndState();
+			}, Visualizer.getMaxCaptureRate(), false, true);
+		enableCaptureByState();
 	}
 
 	private void listenToPlayer( byte[] data ) {
-		int length = Math.min( data.length / 2 + 1, VisualizeDataReceiver.SPECTRUM_NUM );
+		int length = Math.min( data.length / 2 + 1, AudioDataReceiver.SPECTRUM_NUM );
         byte[] model = new byte[length];  
         
         model[0] = (byte) Math.abs(data[0]);
@@ -152,8 +148,8 @@ class StoryPlayer implements PlayController {
             model[j] = (byte) (Math.hypot(data[i], data[i + 1])*volumeFactor);  
             i += 2;
         }
-		Intent intent = new Intent( VisualizeDataReceiver.ACTION_UPDATE_VISUAL_DATA );
-		intent.putExtra( VisualizeDataReceiver.KEY_VISUAL_DATA, model );
+		Intent intent = new Intent( AudioDataReceiver.ACTION_UPDATE_AUDIO_DATA );
+		intent.putExtra( AudioDataReceiver.KEY_AUDIO_DATA, model );
 		context.sendBroadcast(intent);
 	}
 	
@@ -161,7 +157,7 @@ class StoryPlayer implements PlayController {
 	public void start(boolean updateView) {
 		mediaPlayer.start();
 		playerState = PLAYER_STATE.STARTED;
-		enableCaptureByTypeAndState();
+		enableCaptureByState();
 		if( updateView ) {
 			notifyStateChanged();
 		}
@@ -174,7 +170,7 @@ class StoryPlayer implements PlayController {
 						mediaPlayer.getDuration(), 0 );
 		}
 		playerState = PLAYER_STATE.PAUSED;
-		enableCaptureByTypeAndState();
+		enableCaptureByState();
 		mediaPlayer.pause();
 		if( updateView ) {
 			notifyStateChanged();
@@ -191,7 +187,7 @@ class StoryPlayer implements PlayController {
 		mediaPlayer.start();
 		updateTime( cp, mediaPlayer.getDuration(), 0 );
 		playerState = PLAYER_STATE.STARTED;
-		enableCaptureByTypeAndState();
+		enableCaptureByState();
 		notifyStateChanged();
 		if( timeTimerTask == null ) {
 			timeTimerTask = new TimeTimerTask();
@@ -443,24 +439,19 @@ class StoryPlayer implements PlayController {
 	}
 
 	@Override
-	public void setPlayPauseType(PLAY_PAUSE_TYPE type) {
-		this.pausType = type;
-	}
-
-	@Override
 	synchronized public void enableCapture(String source, boolean enabled) {
 		if( enabled ) {
 			captureSource.add(source);
 		} else {
 			captureSource.remove(source);
 		}
+		enableCaptureByState();
+	}
+
+	private void enableCaptureByState() {
 		boolean shouldEnable
 			= ( playerState == PLAYER_STATE.STARTED && !captureSource.isEmpty() );
 		audioCapture.setEnabled( shouldEnable );
-	}
-
-	private void enableCaptureByTypeAndState() {
-		enableCapture( getClass().getName(), pausType == PLAY_PAUSE_TYPE.TO_PAUSE );
 	}
 	
 	synchronized public void disableCaputre() {

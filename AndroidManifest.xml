@@ -42,7 +42,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/story_teller_appwidget_info" />
 		</receiver>
-        <service android:name=".play.PlayService" android:singleUser="true" android:stopWithTask="false">
+        <service android:name=".play.PlayService"
+            	 android:singleUser="true"
+            	 android:stopWithTask="false">
+            
             <intent-filter>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_PAUSE"/>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY"/>

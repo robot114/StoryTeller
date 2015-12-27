@@ -4,6 +4,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -43,6 +44,8 @@ public class PlayService extends Service
 	private AudioManager audioManager;
 
 	private ComponentName buttonReceiverCompName;
+
+	private AudioDataReceiver pauseDataReceiver;
 	
 	public final class ServiceBinder extends Binder {
 		public PlayService getService() {
@@ -61,7 +64,7 @@ public class PlayService extends Service
 		notification = buildNotification( this, playInfo.refreshCurrentPlaying() );
 		startForeground(NOTIFICATION_ID, notification);
 		
-		receiver = new PlayControllerReceiver( this );
+		receiver = new PlayControllerReceiver( );
 		IntentFilter filter
 			= new IntentFilter( AudioManager.ACTION_AUDIO_BECOMING_NOISY );
 		registerReceiver( receiver, filter);
@@ -74,6 +77,8 @@ public class PlayService extends Service
 			= new ComponentName( getPackageName(), 
 								 MediaButtonReceiver.class.getName() );
 		audioManager.registerMediaButtonEventReceiver(buttonReceiverCompName);
+
+		pauseTypeChanged( Preferences.getInstance().getPlayPauseType() );
 	}
 
 	@Override
@@ -297,14 +302,6 @@ public class PlayService extends Service
 			case ACTION_GET_PLAYER_STATE:
 				giveStateBack( intent );
 				break;
-			case ACTION_UPDATE_PLAY_PAUSE_TYPE:
-				PLAY_PAUSE_TYPE type
-					= IntentUtil.getEnumValueIntent(
-							intent, KEY_PLAY_PAUSE_TYPE, PLAY_PAUSE_TYPE.class, null);
-				if( type != null ) {
-					player.setPlayPauseType(type);
-				}
-				break;
 			case ACTION_ENABLE_CAPTURE:
 				if( intent.hasExtra(KEY_ENABLE_CAPTURE) ) {
 					boolean enabled
@@ -313,10 +310,8 @@ public class PlayService extends Service
 					player.enableCapture( source, enabled );
 				}
 				break;
-			case AudioManager.ACTION_AUDIO_BECOMING_NOISY:
-				player.pause( true );
 			default:
-				Log.w( "Unsupported action type", intent );
+				Log.w( "Unsupported action", intent );
 				break;
 		}
 	}
@@ -398,12 +393,49 @@ public class PlayService extends Service
 	}
 
 	@Override
-	public void setPlayPauseType(PLAY_PAUSE_TYPE type) {
-		player.setPlayPauseType(type);
-	}
-
-	@Override
 	public void enableCapture(String source, boolean enabled) {
 		player.enableCapture(source, enabled);
+	}
+	
+	private class PlayControllerReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if( intent.getAction().equals( AudioManager.ACTION_AUDIO_BECOMING_NOISY ) ) {
+				player.pause( true );
+			} else if( intent.getAction()
+						.equals( PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE ) ) {
+				
+				PLAY_PAUSE_TYPE type
+					= IntentUtil.getEnumValueIntent(intent,
+													PlayController.KEY_PLAY_PAUSE_TYPE,
+													PLAY_PAUSE_TYPE.class,
+													null );
+				if( type != null ) {
+					pauseTypeChanged( type );
+				}
+			}
+		}
+	}
+	
+	private void pauseTypeChanged(final PLAY_PAUSE_TYPE type) {
+		if( pauseDataReceiver == null ) {
+			PauseAudioDataListener pauseDataListener
+				= new PauseAudioDataListener( player );
+			Preferences preferences = Preferences.getInstance();
+			pauseDataListener
+				.setMaxSilenceTimes( preferences.getMaxSilenceTimesToPause() );
+			pauseDataListener
+				.setSilenceToilence( preferences.getSilenceToilence() );
+			pauseDataReceiver = new AudioDataReceiver( pauseDataListener );
+		}
+		
+		boolean toPause = ( PLAY_PAUSE_TYPE.TO_PAUSE == type );
+		if( toPause ) {
+			pauseDataReceiver.registerMe(this);
+		} else {
+			pauseDataReceiver.unregisterMe(this);
+		}
+		player.enableCapture( getClass().getName(), toPause );
 	}
 }
