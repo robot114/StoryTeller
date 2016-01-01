@@ -150,14 +150,14 @@
             
         </android.support.v4.view.ViewPager>
 
-        <com.zsm.storyteller.ui.TimedProgressBar
+        <com.zsm.android.ui.TimedProgressBar
             android:id="@+id/timedProgressBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="5dp"
             android:gravity="center_vertical" >
 
-        </com.zsm.storyteller.ui.TimedProgressBar>
+        </com.zsm.android.ui.TimedProgressBar>
 
         <LinearLayout
             android:layout_width="match_parent"

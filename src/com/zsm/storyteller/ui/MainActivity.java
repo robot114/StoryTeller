@@ -30,6 +30,7 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
+import com.zsm.android.ui.TimedProgressBar;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
