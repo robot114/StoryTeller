@@ -18,5 +18,10 @@
     <string name="prefPlayTypeContinuously">Play continuously</string>
     <string name="prefPlayTypeToPause">Pause at each pause</string>
     <string name="prefTitlePlayTypeToPause">When to pause</string>
+    <string name="volumeSetting">Volume Setting</string>
+    <string name="prefKeyPauseWhenNoisy">PAUSE_WHEN_NOISY</string>
+    <string name="prefPauseWhenNoisy">Pause when the audio becoming noisy</string>
+    <string name="prefNoisyPause">Pause playing when the audio becoming noisy</string>
+    <string name="prefNoisyNotPause">Do nothing when the audio becoming noisy</string>
     
 </resources>

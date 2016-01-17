@@ -1,16 +1,22 @@
 package com.zsm.storyteller.preferences;
 
+import android.app.PendingIntent;
+import android.app.PendingIntent.CanceledException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
+import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
+import com.zsm.storyteller.ui.PlayerView;
 
 public class Preferences {
 
@@ -18,6 +24,7 @@ public class Preferences {
 	
 	static private Preferences instance;
 	
+	final private Context context;
 	final private SharedPreferences preferences;
 	
 	private StackTraceElement[] stackTrace;
@@ -42,15 +49,17 @@ public class Preferences {
 	private static final String KEY_MAX_SILENCE_TIMES_TO_PAUSE
 									= "MAX_SILENCE_TIMES_TO_PAUSE";
 	private static final String KEY_SILENCE_TOILENCE = "SILENCE_TOILENCE";
+	private static final String KEY_HEADSET_MUSIC_VOLUME = "HEADSET_MUSIC_VOLUME";
 	
 	public static String KEY_PLAY_ORDER = null;
 	public static String KEY_PLAY_TYPE_TO_PAUSE = null;
+	public static String KEY_PAUSE_WHEN_NOISY = null;
 	
 	private Preferences( Context context ) {
 		preferences
 			= PreferenceManager
 				.getDefaultSharedPreferences( context );
-		
+		this.context = context;
 	}
 	
 	static public void init( Context c ) {
@@ -69,6 +78,7 @@ public class Preferences {
 		Resources r = context.getResources();
 		KEY_PLAY_ORDER = r.getString( R.string.prefKeyPlayOrder );
 		KEY_PLAY_TYPE_TO_PAUSE = r.getString( R.string.prefKeyPlayTypeToPause );
+		KEY_PAUSE_WHEN_NOISY = r.getString( R.string.prefKeyPauseWhenNoisy );
 	}
 	
 	static public Preferences getInstance() {
@@ -230,6 +240,10 @@ public class Preferences {
 		return preferences.getBoolean( KEY_AUTO_START_PLAYING, true );
 	}
 
+
+	public void setAutoPlayingAtStarting(boolean autoStart) {
+		preferences.edit().putBoolean(KEY_AUTO_START_PLAYING, autoStart).commit();
+	}
 	public PLAY_ORDER getPlayOrder() {
 		String orderName
 			= preferences.getString(KEY_PLAY_ORDER, PLAY_ORDER.BY_NAME.name() );
@@ -272,5 +286,40 @@ public class Preferences {
 
 	public int getSilenceToilence() {
 		return preferences.getInt( KEY_SILENCE_TOILENCE, 5 );
+	}
+
+	static public void sendPlayTypeChangeMessage( Context context, PLAY_PAUSE_TYPE type ) {
+		Intent intent = new Intent( PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE );
+		intent.putExtra( PlayController.KEY_PLAY_PAUSE_TYPE, type.name() );
+		PendingIntent pi
+			= PendingIntent.getBroadcast( 
+					context, PlayerView.PLAYER_VIEW_REQUEST_ID, intent,
+					PendingIntent.FLAG_UPDATE_CURRENT);
+		
+		try {
+			pi.send();
+		} catch (CanceledException ex) {
+			Log.e( ex );
+		}
+	}
+
+	public void setHeadsetMusicVolume(int volume) {
+		preferences.edit().putInt( KEY_HEADSET_MUSIC_VOLUME, volume ).commit();
+	}
+
+	public int getHeadsetMusicVolume() {
+		
+		int volume = preferences.getInt(KEY_HEADSET_MUSIC_VOLUME, -1);
+		if( volume < 0 ) {
+			AudioManager am
+				= (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+			volume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+		}
+		
+		return volume;
+	}
+
+	public boolean getPauseWhenNoisy() {
+		return preferences.getBoolean( KEY_PAUSE_WHEN_NOISY, true );
 	}
 }

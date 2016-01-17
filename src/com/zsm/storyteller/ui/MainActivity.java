@@ -1,10 +1,13 @@
 package com.zsm.storyteller.ui;
 
+import java.security.InvalidParameterException;
 import java.util.List;
 
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
@@ -27,21 +30,23 @@ import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ExpandableListView.OnGroupClickListener;
 import android.widget.ImageView;
 import android.widget.SeekBar;
+import android.widget.Toast;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 import com.zsm.android.ui.TimedProgressBar;
+import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
+import com.zsm.storyteller.play.AudioDataListener;
+import com.zsm.storyteller.play.AudioDataReceiver;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.play.RemotePlayer;
-import com.zsm.storyteller.play.AudioDataListener;
-import com.zsm.storyteller.play.AudioDataReceiver;
 import com.zsm.storyteller.preferences.MainPreferenceFragment;
 import com.zsm.storyteller.preferences.Preferences;
 
@@ -104,12 +109,13 @@ public class MainActivity extends FragmentActivity
 										   savedInstanceState );
 		
 		viewPager.setAdapter(adapterViewPager);
-		viewPager.setOnPageChangeListener(new OnPageChangeListener() {
+		viewPager.addOnPageChangeListener(new OnPageChangeListener() {
 			
 			// This method will be invoked when a new page becomes selected.
 			@Override
 			public void onPageSelected(int position) {
 				setVisualizerEnabled( isVisualizerFragment( position ) );
+				adapterViewPager.setDataSource(position, currentPlaying);
 			}
 			
 			// This method will be invoked when the current page is scrolled
@@ -240,6 +246,8 @@ public class MainActivity extends FragmentActivity
 		if( isVisualizerFragment(viewPager.getCurrentItem()) ) {
 			setVisualizerEnabled( true );
 		}
+		
+		((StoryTellerApp)getApplication()).setMainActivityInForeground( true );
 	}
 
 	private boolean isVisualizerFragment(int currentPosition) {
@@ -255,6 +263,7 @@ public class MainActivity extends FragmentActivity
 	protected void onPause() {
 		updateNotification();
 		setVisualizerEnabled( false );
+		((StoryTellerApp)getApplication()).setMainActivityInForeground( false );
 		super.onPause();
 	}
 
@@ -290,12 +299,20 @@ public class MainActivity extends FragmentActivity
 	
 	public void onOpenOne( View v ) {
 		((StoryTellerApp)getApplication())
-			.getPlayFileHandler().openOne(this, player);
+			.getPlayFileHandler().openOne(this, getCurrentPlayingFile(), player);
 	}
 	
 	public void onOpenFolder( View v ) {
 		((StoryTellerApp)getApplication())
-			.getPlayFileHandler().openFolder( this, player );
+			.getPlayFileHandler().openFolder( this, getCurrentPlayingFile(), player );
+	}
+
+	private String getCurrentPlayingFile() {
+		if( currentPlaying != null ) {
+			return currentPlaying.getPath();
+		}
+		
+		return null;
 	}
 	
 	public void onPlayPause( View v ) {
@@ -327,6 +344,50 @@ public class MainActivity extends FragmentActivity
 		startActivity( intent );
 	}
 	
+	public void onChangeMode( final MenuItem item ) {
+		new AlertDialog.Builder(this)
+			.setTitle( R.string.app_name )
+			.setMessage(R.string.modeChangeConfirm)
+        	.setCancelable (false)
+            .setPositiveButton( R.string.toContinue,
+                new DialogInterface.OnClickListener () {
+            		public void onClick (DialogInterface dialog, int buttonId) {
+            			changeMode( item.getItemId() );
+            		} })
+        	.setNegativeButton( android.R.string.cancel, null )
+        	.setIcon (android.R.drawable.ic_dialog_alert)
+        	.show();
+	}
+	
+	private void changeMode(int menuId) {
+		Preferences pref = Preferences.getInstance();
+		PLAY_PAUSE_TYPE ppt;
+		switch( menuId ) {
+			case R.id.itemModeMusic:
+				ppt = PLAY_PAUSE_TYPE.CONTINUOUS;
+				pref.setSkipHeader( false, pref.getSkipHeaderValue() );
+				break;
+			case R.id.itemModeReading:
+				ppt = PLAY_PAUSE_TYPE.CONTINUOUS;
+				pref.setSkipHeader( true, pref.getSkipHeaderValue() );
+				break;
+			case R.id.itemModeStudy:
+				ppt = PLAY_PAUSE_TYPE.TO_PAUSE;
+				pref.setSkipHeader( false, pref.getSkipHeaderValue() );
+				pref.setAutoPlayingAtStarting( false );
+				break;
+			default:
+				Log.e( new InvalidParameterException( "invlaid menu id" ),
+					   "Invlid menu id", menuId );
+				return;
+		}
+		
+		pref.setPlayTypeToPause( ppt );
+		Preferences.sendPlayTypeChangeMessage( this, ppt );
+		
+		Toast.makeText( this, R.string.infoOfModeChanged, Toast.LENGTH_SHORT ).show();
+	}
+
 	public void selectOneToPlay(Uri uri) {
 		player.play(uri, 0 );
 	}

@@ -19,17 +19,20 @@ public class MediaInfo {
 	private int duration = -1;
 	private Bitmap image;
 	private int imageHeight;
+	private String path;
 	
 	public MediaInfo( Context context, Uri uri ) {
+		this.path = uri.getPath();
 		init(context, uri);
 	}
 
 	public MediaInfo( Context context, File file ) {
+		this.path = file.getPath();
 		init( context, Uri.fromFile(file) );
 	}
 
 	private void init(Context context, Uri uri) {
-		String name = uri.getLastPathSegment();
+		String name = uri != null ? uri.getLastPathSegment() : "";
 		metaRetriver = new MediaMetadataRetriever();
 		title = titleWithoutExt( name );
 		try {
@@ -47,6 +50,10 @@ public class MediaInfo {
 		}
 		
 		return name;
+	}
+	
+	public String getPath() {
+		return path;
 	}
 	
 	public Bitmap getImage( int targetHeight ) {

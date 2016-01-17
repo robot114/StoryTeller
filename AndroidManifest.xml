@@ -19,7 +19,7 @@
         android:name=".app.StoryTellerApp"
         android:killAfterRestore="false"
         android:hardwareAccelerated="false"
-        android:allowTaskReparenting="true">
+        android:allowTaskReparenting="false">
         <activity
             android:name="com.zsm.storyteller.ui.MainActivity">
             <intent-filter>

@@ -84,8 +84,8 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		// Perform this loop procedure for each App Widget that belongs to this provider
         Intent intent = new Intent(action);
         PendingIntent pi
-			= PendingIntent.getService(context, 1, intent,
-									   PendingIntent.FLAG_UPDATE_CURRENT);
+			= PendingIntent.getService(context, PlayController.REQUEST_PLAY_CODE,
+									   intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         RemoteViews views
         	= new RemoteViews(context.getPackageName(), R.layout.main_widget);

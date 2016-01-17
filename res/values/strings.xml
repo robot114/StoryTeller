@@ -26,5 +26,13 @@
     <string name="playOrderSumRandom">Play the items randomly</string>
     <string name="pageTitleMediaInfo">Information</string>
     <string name="pageTitleVisualizer">Visualization</string>
+    <string name="menuMode">Mode</string>
+    <string name="modeMusic">Music</string>
+    <string name="modeStudy">Study</string>
+    <string name="modeReading">Reading</string>
+    <string name="modeCustom">Custom</string>
+    <string name="modeChangeConfirm">Continue to changing the current setting of palying</string>
+    <string name="toContinue">Continue</string>
+    <string name="infoOfModeChanged">Setting of playing changed</string>
     
 </resources>

@@ -69,12 +69,22 @@ class MediaInfoView extends LinearLayout {
 		textViewDuration = (TextView)findViewById( R.id.TextViewDuration );
 		textViewPath = (TextView)findViewById( R.id.textViewPath );
 		
+		clearAll();
 	}
 	
+	private void clearAll() {
+		imageView.setVisibility( View.GONE );
+		textViewTitle.setText( "" );
+		textViewAlbum.setText( "" );
+		textViewArtist.setText( "" );
+		textViewDuration.setText( "" );
+		textViewPath.setText( "" );
+	}
+
 	void setDataSource( Uri uri ) {
 		mediaInfo = new MediaInfo( getContext(), uri );
-		fillMediaInfo( uri.getLastPathSegment() );
-		textViewPath.setText(uri.toString());
+		fillMediaInfo( mediaInfo.getTitle() );
+		textViewPath.setText(mediaInfo.getPath());
 	}
 
 	public void setDataSource(File file) {

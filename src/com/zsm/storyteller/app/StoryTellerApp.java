@@ -32,6 +32,8 @@ public class StoryTellerApp extends Application {
 	PlayController player;
 	private PlayFileHandler playFileHandler;
 	private Semaphore playerSemaphore = new Semaphore(0);
+
+	private boolean mMainActivityInForeground;
 	
 	public StoryTellerApp() {
 		LogInstaller.installAndroidLog( "StoryTeller" );
@@ -104,5 +106,13 @@ public class StoryTellerApp extends Application {
 	
 	public static FileExtensionFilter getAudioFileFilter( Context c ) {
 		return getAudioFileFilterArray( c )[0];
+	}
+
+	public void setMainActivityInForeground( boolean inForeground ) {
+		mMainActivityInForeground = inForeground;
+	}
+
+	public boolean getMainActivityInForeground() {
+		return mMainActivityInForeground;
 	}
 }

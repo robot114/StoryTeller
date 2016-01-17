@@ -39,18 +39,18 @@ public class PlayFileHandler implements OnHandleFileListener {
 		}
 	}
 
-	public void openOne( Activity activity, PlayController player ) {
+	public void openOne( Activity activity, String currentPath, PlayController player ) {
 		this.player = player;
 		fileSelector
-			= new FileSelector( activity, FileOperation.LOAD, this,
+			= new FileSelector( activity, FileOperation.LOAD, currentPath, this,
 								StoryTellerApp.getAudioFileFilterArray( activity ) );
 		fileSelector.show();
 	}
 	
-	public void openFolder( Activity activity, PlayController player ) {
+	public void openFolder( Activity activity, String currentPath, PlayController player ) {
 		this.player = player;
 		fileSelector
-			= new FileSelector( activity, FileOperation.FOLDER, this,
+			= new FileSelector( activity, FileOperation.FOLDER, currentPath, this,
 							    StoryTellerApp.getAudioFileFilterArray( activity ) );
 		fileSelector.show();
 	}

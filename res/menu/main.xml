@@ -8,4 +8,13 @@
           android:onClick="onPreferences"
           android:showAsAction="never">
     </item>
+    <item android:id="@+id/itemMode"
+          android:showAsAction="ifRoom"
+          android:title="@string/menuMode">
+        <menu >
+            <item android:id="@+id/itemModeMusic" android:title="@string/modeMusic" android:icon="@drawable/music" android:onClick="onChangeMode"/>
+            <item android:id="@+id/itemModeReading" android:title="@string/modeReading" android:icon="@drawable/reading" android:onClick="onChangeMode"/>
+            <item android:id="@+id/itemModeStudy" android:title="@string/modeStudy" android:icon="@drawable/study" android:onClick="onChangeMode"/>
+        </menu>
+    </item>
 </menu>

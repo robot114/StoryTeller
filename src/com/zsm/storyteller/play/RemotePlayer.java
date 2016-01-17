@@ -1,7 +1,5 @@
 package com.zsm.storyteller.play;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import android.app.PendingIntent;

@@ -22,6 +22,7 @@ import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
+import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.storyteller.ui.PlayerView;
 
@@ -168,6 +169,9 @@ class StoryPlayer implements PlayController {
 		if( mediaPlayer.isPlaying() ) {
 			updateTime( mediaPlayer.getCurrentPosition(),
 						mediaPlayer.getDuration(), 0 );
+		}
+		if( getState() != PLAYER_STATE.STARTED ) {
+			return; 
 		}
 		playerState = PLAYER_STATE.PAUSED;
 		enableCaptureByState();

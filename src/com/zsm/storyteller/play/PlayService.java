@@ -26,6 +26,7 @@ import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
+import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.storyteller.ui.MainActivity;
 import com.zsm.storyteller.ui.StoryTellerAppWidgetProvider;
@@ -67,6 +68,9 @@ public class PlayService extends Service
 		receiver = new PlayControllerReceiver( );
 		IntentFilter filter
 			= new IntentFilter( AudioManager.ACTION_AUDIO_BECOMING_NOISY );
+		registerReceiver( receiver, filter);
+		filter
+			= new IntentFilter( Intent.ACTION_HEADSET_PLUG );
 		registerReceiver( receiver, filter);
 		filter
 			= new IntentFilter( PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE );
@@ -401,20 +405,74 @@ public class PlayService extends Service
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			if( intent.getAction().equals( AudioManager.ACTION_AUDIO_BECOMING_NOISY ) ) {
-				player.pause( true );
-			} else if( intent.getAction()
-						.equals( PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE ) ) {
-				
-				PLAY_PAUSE_TYPE type
-					= IntentUtil.getEnumValueIntent(intent,
-													PlayController.KEY_PLAY_PAUSE_TYPE,
-													PLAY_PAUSE_TYPE.class,
-													null );
-				if( type != null ) {
-					pauseTypeChanged( type );
-				}
+			switch( intent.getAction() ) {
+				case AudioManager.ACTION_AUDIO_BECOMING_NOISY:
+					Log.d( "Audio became noisy" );
+					if( Preferences.getInstance().getPauseWhenNoisy() ) {
+						
+						player.pause( true );
+					}
+					saveVolume();
+					break;
+				case Intent.ACTION_HEADSET_PLUG:
+					plugHeadset( context, intent );
+					break;
+				case PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE:
+					changePlayType(intent);
+					break;
 			}
+		}
+	}
+	
+	private void plugHeadset(Context context, Intent intent) {
+        int state = intent.getIntExtra("state", -1);
+		
+        switch (state) {
+	        case 0:
+	        	// The volume is saved when the audio becomes noisy
+	            Log.d( "Headset is unplugged" );
+	            break;
+	        case 1:
+	        	int volume = restoreVolume( context );
+	            Log.d("Headset is plugged, volume set", volume);
+	            break;
+	        default:
+	            Log.w("Invalid headset state", state);
+        }
+    }
+
+	private int restoreVolume(Context context) {
+		int volume = -1;
+		StoryTellerApp app = (StoryTellerApp) context.getApplicationContext();
+		if( ( app != null && app.getMainActivityInForeground() ) 
+			|| player.getState() == PLAYER_STATE.STARTED ) {
+			
+			AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+			Preferences pref = Preferences.getInstance();
+			volume = pref.getHeadsetMusicVolume();
+			audio.setStreamVolume( AudioManager.STREAM_MUSIC, volume, 0);
+		}
+		
+		return volume;
+	}
+
+	private int saveVolume() {
+		int volume;
+        AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		Preferences pref = Preferences.getInstance();
+		volume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+		pref.setHeadsetMusicVolume( volume );
+		return volume;
+	}
+
+	private void changePlayType(Intent intent) {
+		PLAY_PAUSE_TYPE type
+			= IntentUtil.getEnumValueIntent(intent,
+											PlayController.KEY_PLAY_PAUSE_TYPE,
+											PLAY_PAUSE_TYPE.class,
+											null );
+		if( type != null ) {
+			pauseTypeChanged( type );
 		}
 	}
 	
