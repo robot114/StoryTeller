@@ -5,7 +5,6 @@ import java.util.HashSet;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -15,16 +14,13 @@ import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.widget.Toast;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.preferences.Preferences;
-import com.zsm.storyteller.ui.PlayerView;
 
 class StoryPlayer implements PlayController {
 	
@@ -70,6 +66,8 @@ class StoryPlayer implements PlayController {
 	private PlayInfo playInfo;
 	private TimeTimerTask timeTimerTask;
 	private Context context;
+	private PlayerNotifier playerNotifier;
+
 	private Handler handler;
 
 	private boolean newStartFlag;
@@ -78,8 +76,9 @@ class StoryPlayer implements PlayController {
 	private Visualizer audioCapture;
 	private AudioManager audioManager;
 
-	public StoryPlayer( Context context ) {
+	public StoryPlayer( Context context, PlayerNotifier playerNotifier ) {
 		this.context = context;
+		this.playerNotifier = playerNotifier;
 		audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
 		handler = new Handler();
 		initPlayer(context);
@@ -149,9 +148,7 @@ class StoryPlayer implements PlayController {
             model[j] = (byte) (Math.hypot(data[i], data[i + 1])*volumeFactor);  
             i += 2;
         }
-		Intent intent = new Intent( AudioDataReceiver.ACTION_UPDATE_AUDIO_DATA );
-		intent.putExtra( AudioDataReceiver.KEY_AUDIO_DATA, model );
-		context.sendBroadcast(intent);
+        playerNotifier.newAudioData(model);
 	}
 	
 	@Override
@@ -240,7 +237,7 @@ class StoryPlayer implements PlayController {
 		long sp = shouldSkipHeader(startPosition) ? headerLength : startPosition;
 		getPlayInfoInner().setCurrentPlaying( uri );
 		getPlayInfoInner().setCurrentPlayingPosition( sp );
-		updateDataSource( uri );
+		playerNotifier.updateDataSource( uri );
 		MediaInfo currentMediaInfo = new MediaInfo( context, uri );
 		updateTime((int)sp, currentMediaInfo.getDuration(), 0);		
 	}
@@ -278,19 +275,14 @@ class StoryPlayer implements PlayController {
 	}
 
 	private void notifyStateChanged() {
-		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
-		intent.putExtra( PlayerView.KEY_PLAYER_STATE, playerState.name() );
-		context.sendBroadcast(intent);
+		playerNotifier.stateChanged(playerState);
 	}
 	
 	private void updateTime(int currentPosition, int duration, int times) {
 		if( times % SAVING_POSITION_FACTOR == 0 ) {
 			getPlayInfoInner().setCurrentPlayingPosition(currentPosition);
 		}
-		Intent intent = new Intent( PlayerView.ACTION_UPDATE_ELLAPSED_TIME );
-		intent.putExtra( PlayerView.KEY_ELLAPSED_TIME, currentPosition );
-		intent.putExtra( PlayerView.KEY_DURATION, duration );
-		context.sendBroadcast(intent);
+		playerNotifier.updateTime(currentPosition, duration);
 	}
 
 	private void stopTimeTimerTask() {
@@ -351,8 +343,7 @@ class StoryPlayer implements PlayController {
 	private void playCurrent() {
 		Uri currentPlaying = getPlayInfoInner().refreshCurrentPlaying();
 		if( currentPlaying == null ) {
-			Toast.makeText( context, R.string.openPlayFileFirst, Toast.LENGTH_LONG )
-				 .show();
+			playerNotifier.notifyCannotPlay( R.string.openPlayFileFirst );
 			return;
 		}
 		
@@ -382,24 +373,11 @@ class StoryPlayer implements PlayController {
 			
 			Log.e( e, "Cannot make the file to be played: ",
 				   currentPlaying );
-			Toast.makeText( context, R.string.openFileFailed, Toast.LENGTH_LONG )
-				 .show();
+			playerNotifier.notifyCannotPlay( R.string.openFileFailed );
 			return false;
 		}
 		
 		return true;
-	}
-
-	private void updateDataSource( Uri uri ) {
-		Intent intent = new Intent( PlayerView.ACTION_UPDATE_DATA_SOURCE );
-		intent.putExtra( PlayerView.KEY_DATA_SOURCE, uri );
-		context.sendBroadcast(intent);
-	}
-
-	private void updatePlayList( PlayInfo pi ) {
-		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAY_INFO );
-		intent.putExtra(PlayerView.KEY_PLAY_INFO, pi);
-		context.sendBroadcast(intent);
 	}
 
 	@Override
@@ -415,11 +393,10 @@ class StoryPlayer implements PlayController {
 	public void setPlayInfo(PlayInfo pi) {
 		playInfo = pi;
 		playInfo.getPlayList(StoryTellerApp.getAudioFileFilter(context), true);
-		updatePlayList( playInfo );
+		playerNotifier.updatePlayList( playInfo );
 		Uri currentPlaying = playInfo.refreshCurrentPlaying();
 		if( currentPlaying == null ) {
-			Toast.makeText( context, R.string.noMediaToPlay, Toast.LENGTH_LONG )
-			 	 .show();
+			playerNotifier.notifyCannotPlay( R.string.noMediaToPlay );
 			return;
 		}
 		

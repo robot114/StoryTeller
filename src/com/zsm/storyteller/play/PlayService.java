@@ -16,6 +16,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ResultReceiver;
+import android.support.v4.app.NotificationCompat.Action;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.NotificationCompat;
 import android.widget.RemoteViews;
@@ -29,16 +30,18 @@ import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.storyteller.ui.MainActivity;
+import com.zsm.storyteller.ui.PlayerView;
 import com.zsm.storyteller.ui.StoryTellerAppWidgetProvider;
 
 public class PlayService extends Service
-				implements PlayController, OnAudioFocusChangeListener {
+				implements PlayController, OnAudioFocusChangeListener, PlayerNotifier {
+
+	private static final int NOTIFICATION_REQUEST_CODE = 1;
 
 	public static final int NOTIFICATION_ID = 1;
 	
 	private IBinder binder = null;
 	private StoryPlayer player;
-	private Notification notification;
 	
 	private PlayControllerReceiver receiver;
 
@@ -46,7 +49,9 @@ public class PlayService extends Service
 
 	private ComponentName buttonReceiverCompName;
 
-	private AudioDataReceiver pauseDataReceiver;
+	private AudioDataReceiver audioDataReceiver;
+
+	private PlayInfo playInfo;
 	
 	public final class ServiceBinder extends Binder {
 		public PlayService getService() {
@@ -61,8 +66,11 @@ public class PlayService extends Service
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		PlayInfo playInfo = initPlayer();
-		notification = buildNotification( this, playInfo.refreshCurrentPlaying() );
+		initPlayer();
+		Notification notification
+			= buildNotification( this, playInfo.refreshCurrentPlaying(),
+							     player.getState() );
+		
 		startForeground(NOTIFICATION_ID, notification);
 		
 		receiver = new PlayControllerReceiver( );
@@ -100,11 +108,10 @@ public class PlayService extends Service
 		player.disableCaputre();
 	}
 
-	private PlayInfo initPlayer() {
-		player = new StoryPlayer( this );
-		PlayInfo playInfo = Preferences.getInstance().readPlayListInfo();
+	private void initPlayer() {
+		playInfo = Preferences.getInstance().readPlayListInfo();
+		player = new StoryPlayer( this, this );
 		setPlayInfo( playInfo );
-		return playInfo;
 	}
 
 	@Override
@@ -240,12 +247,9 @@ public class PlayService extends Service
 			return;
 		}
 		
+		this.playInfo = playInfo;
 		player.setPlayInfo(playInfo);
-		Notification notification
-			= PlayService
-				.buildNotification( this, playInfo.refreshCurrentPlaying() );
-	    NotificationManagerCompat
-	    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
+		showNotification(player.getState());
 	}
 
 	private void handleIntent(Intent intent) {
@@ -346,7 +350,8 @@ public class PlayService extends Service
 		return rr;
 	}
 
-	static public Notification buildNotification(Context context, Uri currentPlaying ) {
+	static public Notification buildNotification(Context context, Uri currentPlaying,
+												 PLAYER_STATE state ) {
 		String mediaTitle = "";
 		if( currentPlaying != null ) {
 			MediaInfo mi = new MediaInfo( context, currentPlaying );
@@ -356,15 +361,28 @@ public class PlayService extends Service
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
 						| Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		PendingIntent pi
-			= PendingIntent.getActivity(context, 0, intent,
+			= PendingIntent.getActivity(context, NOTIFICATION_REQUEST_CODE, intent,
 			                			PendingIntent.FLAG_UPDATE_CURRENT);
 		NotificationCompat.Builder builder
 			= new NotificationCompat.Builder( context );
+		NotificationCompat.MediaStyle style = new NotificationCompat.MediaStyle();
 		builder.setSmallIcon( R.drawable.player )
 			   .setContentTitle( context.getText( R.string.app_name ) )
 			   .setContentText( mediaTitle )
 			   .setContentIntent(pi)
-			   .setStyle( new NotificationCompat.MediaStyle() );
+			   .setStyle( style );
+
+        builder.addAction( generateAction( context, android.R.drawable.ic_media_previous,
+        				   "Previous", ACTION_PLAYER_PLAY_PREVIOUS ) );
+        builder.addAction( generateAction( context, android.R.drawable.ic_media_rew,
+        				   "Rewind", ACTION_PLAYER_PLAY_REWIND ) );
+        builder.addAction( generatePlayPauseAction( context, state ) );
+        builder.addAction( generateAction( context, android.R.drawable.ic_media_ff,
+        				   "Fast Foward", ACTION_PLAYER_PLAY_FAST_FORWARD ) );
+        builder.addAction( generateAction( context, android.R.drawable.ic_media_next,
+        				   "Next", ACTION_PLAYER_PLAY_NEXT ) );
+        
+        style.setShowActionsInCompactView(0,1,2,3,4);
 		Notification nf = builder.build();
 		nf.flags |= Notification.FLAG_ONGOING_EVENT;
 		
@@ -477,7 +495,7 @@ public class PlayService extends Service
 	}
 	
 	private void pauseTypeChanged(final PLAY_PAUSE_TYPE type) {
-		if( pauseDataReceiver == null ) {
+		if( audioDataReceiver == null ) {
 			PauseAudioDataListener pauseDataListener
 				= new PauseAudioDataListener( player );
 			Preferences preferences = Preferences.getInstance();
@@ -485,15 +503,86 @@ public class PlayService extends Service
 				.setMaxSilenceTimes( preferences.getMaxSilenceTimesToPause() );
 			pauseDataListener
 				.setSilenceToilence( preferences.getSilenceToilence() );
-			pauseDataReceiver = new AudioDataReceiver( pauseDataListener );
+			audioDataReceiver = new AudioDataReceiver( pauseDataListener );
 		}
 		
 		boolean toPause = ( PLAY_PAUSE_TYPE.TO_PAUSE == type );
 		if( toPause ) {
-			pauseDataReceiver.registerMe(this);
+			audioDataReceiver.registerMe(this);
 		} else {
-			pauseDataReceiver.unregisterMe(this);
+			audioDataReceiver.unregisterMe(this);
 		}
 		player.enableCapture( getClass().getName(), toPause );
+	}
+
+    private static Action generateAction( Context context, int icon, String title, String intentAction ) {
+        Intent intent = new Intent( context, PlayService.class );
+        intent.setAction( intentAction );
+        PendingIntent pendingIntent
+        	 = PendingIntent.getService(context, NOTIFICATION_REQUEST_CODE, intent, 0);
+        return new NotificationCompat.Action.Builder( icon, title, pendingIntent ).build();
+    }
+    
+    private static Action generatePlayPauseAction( Context context, PLAYER_STATE state ) {
+    	int icon;
+    	String title;
+    	if( state == PLAYER_STATE.STARTED ) {
+    		icon = android.R.drawable.ic_media_pause;
+    		title = "Pause";
+    	} else {
+    		icon = android.R.drawable.ic_media_play;
+    		title = "Play";
+    	}
+        return generateAction( context, icon, title, ACTION_PLAYER_PLAY_PAUSE );
+    }
+    
+    private void showNotification(PLAYER_STATE state) {
+		Notification notification
+			= buildNotification( this, playInfo.refreshCurrentPlaying(), state );
+		
+	    NotificationManagerCompat
+	    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
+    }
+
+	@Override
+	public void stateChanged(PLAYER_STATE newState) {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
+		intent.putExtra( PlayerView.KEY_PLAYER_STATE, newState.name() );
+		sendBroadcast(intent);
+		showNotification( newState );
+	}
+
+	@Override
+	public void newAudioData(byte[] data) {
+		Intent intent = new Intent( AudioDataReceiver.ACTION_UPDATE_AUDIO_DATA );
+		intent.putExtra( AudioDataReceiver.KEY_AUDIO_DATA, data );
+		sendBroadcast(intent);
+	}
+
+	@Override
+	public void updateTime(int ellapsed, int duration) {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_ELLAPSED_TIME );
+		intent.putExtra( PlayerView.KEY_ELLAPSED_TIME, ellapsed );
+		intent.putExtra( PlayerView.KEY_DURATION, duration );
+		sendBroadcast(intent);
+	}
+
+	@Override
+	public void updateDataSource(Uri uri) {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_DATA_SOURCE );
+		intent.putExtra( PlayerView.KEY_DATA_SOURCE, uri );
+		sendBroadcast(intent);
+	}
+
+	@Override
+	public void updatePlayList(PlayInfo pi) {
+		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAY_INFO );
+		intent.putExtra(PlayerView.KEY_PLAY_INFO, pi);
+		sendBroadcast(intent);
+	}
+
+	@Override
+	public void notifyCannotPlay(int promptId) {
+		Toast.makeText( this, promptId, Toast.LENGTH_LONG ).show();
 	}
 }

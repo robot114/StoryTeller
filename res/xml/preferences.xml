@@ -28,7 +28,8 @@
             android:persistent="true"
             android:selectable="true"/>
     <CheckBoxPreference android:title="@string/prefPauseWhenNoisy" android:key="@string/prefKeyPauseWhenNoisy" android:summaryOn="@string/prefNoisyPause" android:summaryOff="@string/prefNoisyNotPause" /></PreferenceScreen>
-    <PreferenceScreen android:title="@string/volumeSetting" android:icon="@drawable/volume_setting">
+    <PreferenceScreen android:title="@string/prefDisplaySetting" android:icon="@drawable/phone" android:summary="@string/prefDisplaySettingSummary">
+        <CheckBoxPreference android:key="@string/prefKeyScreenOnWhenPlay" android:summaryOn="@string/prefScreenOnSummaryOn" android:summaryOff="@string/prefScreenOnSummaryOff" android:icon="@drawable/light_on" android:title="@string/prefScreenOnWhenPlay"/>
         
         
     </PreferenceScreen>

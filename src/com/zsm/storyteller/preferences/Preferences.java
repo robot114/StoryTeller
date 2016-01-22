@@ -50,10 +50,11 @@ public class Preferences {
 									= "MAX_SILENCE_TIMES_TO_PAUSE";
 	private static final String KEY_SILENCE_TOILENCE = "SILENCE_TOILENCE";
 	private static final String KEY_HEADSET_MUSIC_VOLUME = "HEADSET_MUSIC_VOLUME";
-	
+
 	public static String KEY_PLAY_ORDER = null;
 	public static String KEY_PLAY_TYPE_TO_PAUSE = null;
 	public static String KEY_PAUSE_WHEN_NOISY = null;
+	private static String KEY_SCREEN_WHEN_PLAY = null;
 	
 	private Preferences( Context context ) {
 		preferences
@@ -79,6 +80,7 @@ public class Preferences {
 		KEY_PLAY_ORDER = r.getString( R.string.prefKeyPlayOrder );
 		KEY_PLAY_TYPE_TO_PAUSE = r.getString( R.string.prefKeyPlayTypeToPause );
 		KEY_PAUSE_WHEN_NOISY = r.getString( R.string.prefKeyPauseWhenNoisy );
+		KEY_SCREEN_WHEN_PLAY = r.getString( R.string.prefKeyScreenOnWhenPlay );
 	}
 	
 	static public Preferences getInstance() {
@@ -321,5 +323,13 @@ public class Preferences {
 
 	public boolean getPauseWhenNoisy() {
 		return preferences.getBoolean( KEY_PAUSE_WHEN_NOISY, true );
+	}
+
+	public boolean getScreenOnWhenPlay() {
+		return preferences.getBoolean( KEY_SCREEN_WHEN_PLAY, false );
+	}
+
+	public void setScreenOnWhenPlay(boolean b) {
+		preferences.edit().putBoolean(KEY_SCREEN_WHEN_PLAY, b).commit();
 	}
 }

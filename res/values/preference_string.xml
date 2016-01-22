@@ -23,5 +23,11 @@
     <string name="prefPauseWhenNoisy">Pause when the audio becoming noisy</string>
     <string name="prefNoisyPause">Pause playing when the audio becoming noisy</string>
     <string name="prefNoisyNotPause">Do nothing when the audio becoming noisy</string>
+    <string name="prefKeyScreenOnWhenPlay">SCREEN_WHEN_PLAY</string>
+    <string name="prefDisplaySetting">Display Setting</string>
+    <string name="prefDisplaySettingSummary">Setting on displaying</string>
+    <string name="prefScreenOnSummaryOn">Keep the screen on when play</string>
+    <string name="prefScreenOnSummaryOff">Do not keep the screen on when play</string>
+    <string name="prefScreenOnWhenPlay">Keep screen on when play</string>
     
 </resources>

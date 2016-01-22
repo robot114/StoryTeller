@@ -269,7 +269,7 @@ public class MainActivity extends FragmentActivity
 
 	private void updateNotification() {
 		Notification notification
-			= PlayService.buildNotification( this, currentPlaying );
+			= PlayService.buildNotification( this, currentPlaying, playerState );
 	    NotificationManagerCompat
 	    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
 	}
@@ -366,15 +366,20 @@ public class MainActivity extends FragmentActivity
 			case R.id.itemModeMusic:
 				ppt = PLAY_PAUSE_TYPE.CONTINUOUS;
 				pref.setSkipHeader( false, pref.getSkipHeaderValue() );
+				pref.setScreenOnWhenPlay( false );
 				break;
 			case R.id.itemModeReading:
 				ppt = PLAY_PAUSE_TYPE.CONTINUOUS;
 				pref.setSkipHeader( true, pref.getSkipHeaderValue() );
+				pref.setScreenOnWhenPlay( false );
+				pref.setPlayOrder( PLAY_ORDER.BY_NAME );
 				break;
 			case R.id.itemModeStudy:
 				ppt = PLAY_PAUSE_TYPE.TO_PAUSE;
 				pref.setSkipHeader( false, pref.getSkipHeaderValue() );
 				pref.setAutoPlayingAtStarting( false );
+				pref.setScreenOnWhenPlay( true );
+				pref.setPlayOrder( PLAY_ORDER.BY_NAME );
 				break;
 			default:
 				Log.e( new InvalidParameterException( "invlaid menu id" ),
@@ -384,6 +389,8 @@ public class MainActivity extends FragmentActivity
 		
 		pref.setPlayTypeToPause( ppt );
 		Preferences.sendPlayTypeChangeMessage( this, ppt );
+		setKeepScreenOn( playerState );
+		setPlayOrderIcon( pref.getPlayOrder() );
 		
 		Toast.makeText( this, R.string.infoOfModeChanged, Toast.LENGTH_SHORT ).show();
 	}
@@ -408,6 +415,7 @@ public class MainActivity extends FragmentActivity
 	public void updatePlayerState(PLAYER_STATE state) {
 		playerState = state;
 		updatePlayPauseIcon(state);
+		setKeepScreenOn( state );
 	}
 
 	private void setVisualizerEnabled(final boolean enabled) {
@@ -480,4 +488,8 @@ public class MainActivity extends FragmentActivity
 		playPause.setImageDrawable(icon);
 	}
 
+	private void setKeepScreenOn(PLAYER_STATE state) {
+		playPause.setKeepScreenOn( state == PLAYER_STATE.STARTED 
+						&& Preferences.getInstance().getScreenOnWhenPlay() );
+	}
 }
