@@ -30,7 +30,7 @@
         </activity>
         <activity android:name=".ui.MainPreferenceActivity"
             	  android:configChanges="orientation"></activity>
-        <receiver android:name=".ui.StoryTellerAppWidgetProvider">
+        <receiver android:name=".ui.StoryTellerAppWidgetProvider"  android:label="Story Teller">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.zsm.storyteller.PLAYER_VIEW.UPDATE_PLAYER_STATE"/>
