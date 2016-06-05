@@ -34,5 +34,6 @@
     <string name="modeChangeConfirm">Continue to changing the current setting of palying</string>
     <string name="toContinue">Continue</string>
     <string name="infoOfModeChanged">Setting of playing changed</string>
+    <string name="inputError">Input error, nothing changed</string>
     
 </resources>

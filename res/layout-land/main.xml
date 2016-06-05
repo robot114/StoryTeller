@@ -1,0 +1,195 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="5dp"
+    android:padding="5dp"
+    tools:context="${relativePackage}.${activityClass}" >
+
+    <RelativeLayout
+        android:id="@+id/layoutController2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@+id/layoutController" >
+
+        <RelativeLayout
+            android:id="@+id/layoutFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true" >
+
+            <ImageView
+                android:id="@+id/imageViewOpenOne"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_marginLeft="@dimen/defaultPadding"
+                android:layout_marginRight="@dimen/defaultPadding"
+                android:contentDescription="@string/opneOne"
+                android:onClick="onOpenOne"
+                android:src="@drawable/open_one" />
+
+            <ImageView
+                android:id="@+id/imageViewOpenFolder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/imageViewOpenOne"
+                android:layout_centerHorizontal="true"
+                android:layout_marginLeft="@dimen/defaultPadding"
+                android:layout_marginRight="@dimen/defaultPadding"
+                android:contentDescription="@string/openFolder"
+                android:onClick="onOpenFolder"
+                android:src="@drawable/open_folder" />
+        </RelativeLayout>
+
+	    <ImageView
+	        android:id="@+id/imageViewPlay"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_centerHorizontal="true"
+	        android:layout_centerVertical="true"
+	        android:clickable="true"
+	        android:contentDescription="@string/play"
+	        android:onClick="onPlayPause"
+	        android:src="@drawable/play" />
+	
+	    <ImageView
+	        android:id="@+id/imageViewPlayOrder"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentBottom="true"
+	        android:layout_centerHorizontal="true"
+	        android:src="@drawable/play_inrorder" />
+	
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/layoutController"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentStart="false"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_margin="5dp" >
+
+        <ImageView
+            android:id="@+id/imageViewForward"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/imageViewStop"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:contentDescription="@string/playForward"
+            android:onClick="onForward"
+            android:src="@drawable/play_forward" />
+
+        <ImageView
+            android:id="@+id/imageViewStop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/imageViewRewind"
+            android:layout_centerHorizontal="true"
+            android:clickable="true"
+            android:contentDescription="@string/stop"
+            android:onClick="onStop"
+            android:src="@drawable/stop" />
+
+        <ImageView
+            android:id="@+id/imageViewRewind"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/imageViewPrevious"
+            android:layout_centerHorizontal="true"
+            android:contentDescription="@string/playRewind"
+            android:onClick="onRewind"
+            android:src="@drawable/play_rewind" />
+
+        <ImageView
+            android:id="@+id/imageViewNext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/imageViewForward"
+            android:layout_centerHorizontal="true"
+            android:onClick="onNext"
+            android:src="@drawable/play_next" />
+
+        <ImageView
+            android:id="@+id/imageViewPrevious"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginLeft="16dp"
+            android:onClick="onPrevious"
+            android:src="@drawable/play_prev" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/textViewPlayingFile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/layoutController2"
+        android:gravity="center_horizontal"
+        android:text="@string/hintOfPlayFile"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    <LinearLayout
+        android:id="@+id/layoutItem"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/timedProgressBar"
+        android:layout_toStartOf="@id/layoutController2"
+        android:orientation="horizontal" >
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/viewInfoViewPager"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_margin="5dp"
+            android:layout_weight="1" >
+
+            <android.support.v4.view.PagerTabStrip
+                android:id="@+id/pagerHeaderInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:paddingBottom="4dp"
+                android:paddingTop="4dp" >
+            </android.support.v4.view.PagerTabStrip>
+        </android.support.v4.view.ViewPager>
+
+        <LinearLayout
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/infoListSeparator"
+            android:orientation="vertical" >
+        </LinearLayout>
+
+        <ExpandableListView
+            android:id="@+id/listPlayList"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_margin="@dimen/defaultPadding"
+            android:layout_weight="0.9"
+            android:groupIndicator="@null" >
+        </ExpandableListView>
+    </LinearLayout>
+
+    <com.zsm.android.ui.TimedProgressBar
+        android:id="@+id/timedProgressBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewPlayingFile"
+        android:layout_margin="5dp"
+        android:layout_toStartOf="@id/layoutController2"
+        android:gravity="center_vertical" >
+
+    </com.zsm.android.ui.TimedProgressBar>
+
+</RelativeLayout>

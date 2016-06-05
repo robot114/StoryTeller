@@ -58,7 +58,7 @@ class StoryPlayer implements PlayController {
 		}
 	}
 	
-	private static final int SAVING_POSITION_FACTOR = 4;
+	private static final int SAVING_POSITION_FACTOR = 120;
 	
 	private MediaPlayer mediaPlayer;
 	private PLAYER_STATE playerState = PLAYER_STATE.IDLE;

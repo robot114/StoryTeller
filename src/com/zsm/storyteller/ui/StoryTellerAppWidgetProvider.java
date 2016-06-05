@@ -39,6 +39,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager,
 						 int[] appWidgetIds) {
 		
+		Log.d( "update widget" );
 		startService( context );
 		addClickEvent(context, appWidgetManager, appWidgetIds,
         			  PlayController.ACTION_PLAYER_PLAY_PAUSE,
@@ -60,13 +61,14 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		ServiceConnection serviceConnection = new ServiceConnection() {
 		    @Override
 		    public void onServiceConnected(ComponentName name, IBinder service) {
-		    	Log.d("Service connected", service);
+		    	Log.d("Service connected", "ComponentName", name, service);
 		        PlayService.ServiceBinder binder = (PlayService.ServiceBinder) service;
 		        binder.getService();
 		    }
 		 
 		    @Override
 		    public void onServiceDisconnected(ComponentName name) {
+		    	Log.d( "Service disconnected", "ComponentName", name );
 		    }
 
 		};
@@ -92,7 +94,8 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
         views.setOnClickPendingIntent(viewResId, pi);
 
         // Tell the AppWidgetManager to perform an update on the current app widget
-        appWidgetManager.updateAppWidget(appWidgetIds, views);
+        ComponentName compName = new ComponentName(context, getClass().getName());
+		appWidgetManager.updateAppWidget(compName, views);
 	}
 
 	@Override
@@ -104,18 +107,17 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 			playerViewReceiver.onReceive(context, intent);
 			return;
 		}
+		
 		Log.d( intent );
 		remoteViews
 			= new RemoteViews(context.getPackageName(), R.layout.main_widget);
-		AppWidgetManager appWidgetManager
-			= AppWidgetManager.getInstance(context.getApplicationContext());
-		ComponentName widgets
-			= new ComponentName(context, StoryTellerAppWidgetProvider.class);
-	    int[] allWidgetIds = appWidgetManager.getAppWidgetIds(widgets);
-
-		
 		if( playerViewReceiver.onReceive(context, intent) ) {
-	        appWidgetManager.updateAppWidget(allWidgetIds, remoteViews);
+			AppWidgetManager appWidgetManager
+				= AppWidgetManager.getInstance(context.getApplicationContext());
+			ComponentName widgets
+				= new ComponentName(context, StoryTellerAppWidgetProvider.class);
+		
+	        appWidgetManager.updateAppWidget(widgets, remoteViews);
 			remoteViews = null;
 			return;
 		}
@@ -162,11 +164,10 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 					= AppWidgetManager.getInstance(context.getApplicationContext());
 				ComponentName widgets
 					= new ComponentName(context, StoryTellerAppWidgetProvider.class);
-			    int[] allWidgetIds = appWidgetManager.getAppWidgetIds(widgets);
 				StoryTellerApp app
 					= (StoryTellerApp) context.getApplicationContext();
 				setPlayPauseIcon(rvs, app.getPlayer().getState(), type );
-		        appWidgetManager.updateAppWidget(allWidgetIds, rvs);
+		        appWidgetManager.updateAppWidget(widgets, rvs);
 				rvs = null;
 			}
 		} );

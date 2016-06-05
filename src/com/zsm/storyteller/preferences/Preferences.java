@@ -193,6 +193,11 @@ public class Preferences {
 		return progressValue+1;
 	}
 
+	static public int forwardSkipSecondRealToProgress( 
+				int realValue ) {
+	
+		return realValue-1;
+	}
 	synchronized public void setForwardSkipValue( FORWARD_SKIP_TYPE type,
 												  int progressValueOfPercent,
 												  int progressValueOfSecond ) {

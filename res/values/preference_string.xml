@@ -6,11 +6,12 @@
     <string name="prefForwordRewindType">How to Forward and Rewind</string>
     <string name="prefForwardRewindTypeDesc">How to skip when forward or rewind</string>
     <string name="prefForwardRewindByPercent">Skip by %.1f%%</string>
-    <string name="prefForwardRewindBySecond">Skip by %d second</string>
+    <string name="prefForwardRewindBySecond">Skip by second</string>
     <string name="prefSkipHeaderAuto">Skip the header automatically</string>
     <string name="prefSkipHeaderLengthDesc">Length of the header to skip</string>
     <string name="prefSkipHeaderLength">Header Length</string>
-    <string name="prefSkipHeader">Skip Header by %d Sec Automatically</string>
+    <string name="prefSkipHeader">Skip header automatically</string>
+    <string name="prefSkipHeaderValueLabel">by seconds: </string>
     <string name="prefKeyPlayOrder">PLAY_ORDER</string>
     <string name="prefPlayOrderByName">By Name</string>
     <string name="prefPlayOrderRandom">Random</string>

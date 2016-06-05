@@ -22,7 +22,7 @@
         android:hardwareAccelerated="false"
         android:allowTaskReparenting="false">
         <activity
-            android:name="com.zsm.storyteller.ui.MainActivity">
+            android:name=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -45,7 +45,7 @@
 		</receiver>
         <service android:name=".play.PlayService"
             	 android:singleUser="true"
-            	 android:stopWithTask="false">
+            	 android:enabled="true" android:exported="false" android:stopWithTask="false">
             
             <intent-filter>
                 <action android:name="com.zsm.storyteller.PLAYER.PLAY_PAUSE"/>

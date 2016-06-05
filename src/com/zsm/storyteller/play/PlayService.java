@@ -42,17 +42,13 @@ public class PlayService extends Service
 	
 	private IBinder binder = null;
 	private StoryPlayer player;
-	
-	private PlayControllerReceiver receiver;
-
-	private AudioManager audioManager;
-
-	private ComponentName buttonReceiverCompName;
-
-	private AudioDataReceiver audioDataReceiver;
-
 	private PlayInfo playInfo;
 	
+	private PlayControllerReceiver receiver;
+	private AudioManager audioManager;
+	private ComponentName buttonReceiverCompName;
+	private AudioDataReceiver audioDataReceiver;
+
 	public final class ServiceBinder extends Binder {
 		public PlayService getService() {
 		    return PlayService.this;
@@ -373,14 +369,14 @@ public class PlayService extends Service
 			   .setStyle( style );
 
         builder.addAction( generateAction( context, android.R.drawable.ic_media_previous,
-        				   "Previous", ACTION_PLAYER_PLAY_PREVIOUS ) );
+        				   				   ACTION_PLAYER_PLAY_PREVIOUS ) );
         builder.addAction( generateAction( context, android.R.drawable.ic_media_rew,
-        				   "Rewind", ACTION_PLAYER_PLAY_REWIND ) );
+        				   				   ACTION_PLAYER_PLAY_REWIND ) );
         builder.addAction( generatePlayPauseAction( context, state ) );
         builder.addAction( generateAction( context, android.R.drawable.ic_media_ff,
-        				   "Fast Foward", ACTION_PLAYER_PLAY_FAST_FORWARD ) );
+        				   				   ACTION_PLAYER_PLAY_FAST_FORWARD ) );
         builder.addAction( generateAction( context, android.R.drawable.ic_media_next,
-        				   "Next", ACTION_PLAYER_PLAY_NEXT ) );
+        				   				   ACTION_PLAYER_PLAY_NEXT ) );
         
         style.setShowActionsInCompactView(0,1,2,3,4);
 		Notification nf = builder.build();
@@ -515,25 +511,22 @@ public class PlayService extends Service
 		player.enableCapture( getClass().getName(), toPause );
 	}
 
-    private static Action generateAction( Context context, int icon, String title, String intentAction ) {
+    private static Action generateAction( Context context, int icon, String intentAction ) {
         Intent intent = new Intent( context, PlayService.class );
         intent.setAction( intentAction );
         PendingIntent pendingIntent
         	 = PendingIntent.getService(context, NOTIFICATION_REQUEST_CODE, intent, 0);
-        return new NotificationCompat.Action.Builder( icon, title, pendingIntent ).build();
+        return new NotificationCompat.Action.Builder( icon, "", pendingIntent ).build();
     }
     
     private static Action generatePlayPauseAction( Context context, PLAYER_STATE state ) {
     	int icon;
-    	String title;
     	if( state == PLAYER_STATE.STARTED ) {
     		icon = android.R.drawable.ic_media_pause;
-    		title = "Pause";
     	} else {
     		icon = android.R.drawable.ic_media_play;
-    		title = "Play";
     	}
-        return generateAction( context, icon, title, ACTION_PLAYER_PLAY_PAUSE );
+        return generateAction( context, icon, ACTION_PLAYER_PLAY_PAUSE );
     }
     
     private void showNotification(PLAYER_STATE state) {
