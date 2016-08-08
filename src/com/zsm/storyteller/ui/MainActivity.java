@@ -30,19 +30,19 @@ import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ExpandableListView.OnGroupClickListener;
 import android.widget.ImageView;
 import android.widget.SeekBar;
-import android.widget.Toast;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.zsm.android.ui.TimedProgressBar;
 import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
+import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
 import com.zsm.storyteller.play.AudioDataListener;
 import com.zsm.storyteller.play.AudioDataReceiver;
 import com.zsm.storyteller.play.PlayController;
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 import com.zsm.storyteller.play.PlayService;
@@ -145,8 +145,7 @@ public class MainActivity extends FragmentActivity
 		player.setPlayInfo( Preferences.getInstance().readPlayListInfo() );
 		playListAdapter.setPlayer(player);
 		PLAYER_STATE playerStateNow = player.getState();
-		if( ( playerStateNow == null 
-				|| playerStateNow == PlayController.PLAYER_STATE.IDLE ) 
+		if( ( playerStateNow == null || playerStateNow == PLAYER_STATE.IDLE ) 
 			&& Preferences.getInstance().autoStartPlaying() ) {
 			
 			player.playPause();
@@ -197,7 +196,7 @@ public class MainActivity extends FragmentActivity
 
 			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
-				if ( playerState == PlayController.PLAYER_STATE.STARTED ) {
+				if ( playerState == PLAYER_STATE.STARTED ) {
 					player.pause( false );
 					trackingDragging = true;
 				}

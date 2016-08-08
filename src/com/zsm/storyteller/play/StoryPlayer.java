@@ -6,10 +6,6 @@ import java.util.HashSet;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.media.MediaPlayer.OnErrorListener;
-import android.media.MediaPlayer.OnPreparedListener;
 import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Handler;
@@ -20,6 +16,7 @@ import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
+import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
 import com.zsm.storyteller.preferences.Preferences;
 
 class StoryPlayer implements PlayController {
@@ -60,7 +57,7 @@ class StoryPlayer implements PlayController {
 	
 	private static final int SAVING_POSITION_FACTOR = 120;
 	
-	private MediaPlayer mediaPlayer;
+	private AbstractPlayer mediaPlayer;
 	private PLAYER_STATE playerState = PLAYER_STATE.IDLE;
 
 	private PlayInfo playInfo;
@@ -87,49 +84,50 @@ class StoryPlayer implements PlayController {
 	}
 
 	private void initPlayer(Context context) {
-		mediaPlayer = new MediaPlayer();
+//		mediaPlayer = new AndroidMediaPlayer( this );
+		mediaPlayer = new DecodingPlayer( );
 		mediaPlayer.reset();
 		mediaPlayer.setWakeMode( context, PowerManager.PARTIAL_WAKE_LOCK );
-		mediaPlayer.setOnErrorListener( new OnErrorListener() {
+		mediaPlayer.setOnErrorListener( new OnPlayerErrorListener() {
 			@Override
-			public boolean onError(MediaPlayer mp, int what, int extra) {
-				Log.e( "Something is wrong.", mp, "what", what, "extra", extra,
+			public boolean onError(AbstractPlayer player, int what, int extra) {
+				Log.e( "Something is wrong.", player, "what", what, "extra", extra,
 					   "newStartFlag", newStartFlag );
 				return newStartFlag;
 			}
 		} );
 		
-		mediaPlayer.setOnCompletionListener( new OnCompletionListener() {
+		mediaPlayer.setOnCompletionListener( new OnPlayerCompletionListener() {
 			@Override
-			public void onCompletion(MediaPlayer mp) {
+			public void onCompletion(AbstractPlayer player) {
 				toNext( );
 			}
 		} );
 		
-		mediaPlayer.setOnPreparedListener( new OnPreparedListener() {
+		mediaPlayer.setOnPreparedListener( new OnPlayerPreparedListener() {
 			@Override
-			public void onPrepared(MediaPlayer mp) {
+			public void onPrepared(AbstractPlayer player) {
+		        int audioSessionId = mediaPlayer.getAudioSessionId();
+				audioCapture = new Visualizer(audioSessionId);
+				disableCaputre();
+		        audioCapture.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);  
+				audioCapture.setDataCaptureListener(
+					new Visualizer.OnDataCaptureListener() {
+						public void onWaveFormDataCapture(Visualizer visualizer,
+								byte[] bytes, int samplingRate) {
+							listenToPlayer(bytes);
+						}
+		
+						public void onFftDataCapture(Visualizer visualizer,
+								byte[] fft, int samplingRate) {
+							listenToPlayer(fft);
+						}
+					}, Visualizer.getMaxCaptureRate(), false, true);
+				enableCaptureByState();
 				play();
 			}
 		} );
 		
-        int audioSessionId = mediaPlayer.getAudioSessionId();
-		audioCapture = new Visualizer(audioSessionId);
-		disableCaputre();
-        audioCapture.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);  
-		audioCapture.setDataCaptureListener(
-			new Visualizer.OnDataCaptureListener() {
-				public void onWaveFormDataCapture(Visualizer visualizer,
-						byte[] bytes, int samplingRate) {
-					listenToPlayer(bytes);
-				}
-
-				public void onFftDataCapture(Visualizer visualizer,
-						byte[] fft, int samplingRate) {
-					listenToPlayer(fft);
-				}
-			}, Visualizer.getMaxCaptureRate(), false, true);
-		enableCaptureByState();
 	}
 
 	private void listenToPlayer( byte[] data ) {
@@ -224,6 +222,7 @@ class StoryPlayer implements PlayController {
 	public void play(Uri uri, int startPosition ) {
 		stopTimeTimerTask();
 		if( uri != null ) {
+			mediaPlayer.reset();
 			playInfo.setCurrentPlaying(uri);
 			playInfo.setCurrentPlayingPosition(startPosition);
 			playerState = PLAYER_STATE.IDLE;
@@ -398,6 +397,19 @@ class StoryPlayer implements PlayController {
 		if( currentPlaying == null ) {
 			playerNotifier.notifyCannotPlay( R.string.noMediaToPlay );
 			return;
+		}
+		
+		// When the main activity is displayed after it is "killed", and the player is playing
+		// the main activity has to be set the play info. But the state of the player is started.
+		if( playerState == PLAYER_STATE.IDLE ) {
+			try {
+				mediaPlayer.reset();
+				mediaPlayer.setDataSource(context, currentPlaying);
+			} catch (IOException e) {
+				Log.e( e, "Cannot play the media" + currentPlaying );
+				playerNotifier.notifyCannotPlay( R.string.noMediaToPlay );
+				return;
+			}
 		}
 		
 		long startPosition = playInfo.getCurrentPlayingPosition();

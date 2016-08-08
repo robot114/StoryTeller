@@ -95,7 +95,7 @@ public class RemotePlayer implements PlayController {
 	}
 
 	@Override
-	public PLAYER_STATE getState() {
+	public AbstractPlayer.PLAYER_STATE getState() {
 		return getPlayerStateNow();
 	}
 
@@ -128,7 +128,7 @@ public class RemotePlayer implements PlayController {
 		}
 	}
 
-	synchronized private PLAYER_STATE getPlayerStateNow() {
+	synchronized private AbstractPlayer.PLAYER_STATE getPlayerStateNow() {
 		PlayerStateResultReceiver rr = new PlayerStateResultReceiver(null);
 		receiveResultFromService( rr, PlayController.ACTION_GET_PLAYER_STATE );
 		return rr.state;
@@ -161,7 +161,7 @@ public class RemotePlayer implements PlayController {
 	}
 
 	private final class PlayerStateResultReceiver extends ResultReceiver {
-		private PLAYER_STATE state;
+		private AbstractPlayer.PLAYER_STATE state;
 
 		private PlayerStateResultReceiver(Handler handler) {
 			super(handler);
@@ -171,7 +171,7 @@ public class RemotePlayer implements PlayController {
 		protected void onReceiveResult(int resultCode, Bundle resultData) {
 			String stateName
 				= resultData.getString( PlayController.KEY_PLAYER_STATE, "" );
-			state = PLAYER_STATE.valueOf(stateName);
+			state = AbstractPlayer.PLAYER_STATE.valueOf(stateName);
 			playerSemaphore.release();
 		}
 	}

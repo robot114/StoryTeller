@@ -15,6 +15,7 @@
     <string name="labelDuration">Duration:</string>
     <string name="toExpandOrCollapse">To expand or collapse</string>
     <string name="noMediaToPlay">No media can be played now!</string>
+    <string name="cannotPlayMedia">Cannot play the media!</string>
     <string name="playingSetting">Playing Setting</string>
     <string name="playingSettingDesc">Define something for playing</string>
     <string name="autoStartOn">Start playing when the app starts</string>

@@ -7,8 +7,9 @@ import android.net.Uri;
 import com.zsm.android.util.IntentUtil;
 import com.zsm.log.Log;
 import com.zsm.storyteller.PlayInfo;
+import com.zsm.storyteller.play.AbstractPlayer;
+import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController;
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 
 public class PlayerViewReceiver {
@@ -23,10 +24,10 @@ public class PlayerViewReceiver {
 	public boolean onReceive(Context context, Intent intent) {
 		switch( intent.getAction() ) {
 			case PlayerView.ACTION_UPDATE_PLAYER_STATE:
-				PLAYER_STATE state
+				AbstractPlayer.PLAYER_STATE state
 					= IntentUtil.getEnumValueIntent(
 							intent, PlayerView.KEY_PLAYER_STATE,
-							PLAYER_STATE.class, null);
+							AbstractPlayer.PLAYER_STATE.class, null);
 				if( state != null ) {
 					view.updatePlayerState( state );
 				}

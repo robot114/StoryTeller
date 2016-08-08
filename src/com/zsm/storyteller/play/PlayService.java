@@ -86,7 +86,7 @@ public class PlayService extends Service
 								 MediaButtonReceiver.class.getName() );
 		audioManager.registerMediaButtonEventReceiver(buttonReceiverCompName);
 
-		pauseTypeChanged( Preferences.getInstance().getPlayPauseType() );
+		allowToPlay();
 	}
 
 	@Override
@@ -107,7 +107,8 @@ public class PlayService extends Service
 	private void initPlayer() {
 		playInfo = Preferences.getInstance().readPlayListInfo();
 		player = new StoryPlayer( this, this );
-		setPlayInfo( playInfo );
+		// Do not need to set play info at this time. The service will update it later.
+//		setPlayInfo( playInfo );
 	}
 
 	@Override
@@ -219,7 +220,7 @@ public class PlayService extends Service
 
 	@Override
 	public void playPause() {
-		if( allowToPlay() ) {
+		if( getState() == AbstractPlayer.PLAYER_STATE.STARTED || allowToPlay() ) {
 			player.playPause();
 		} else {
 			promptNotAllowed();
@@ -231,10 +232,10 @@ public class PlayService extends Service
 	}
 
 	private boolean inPlayingState() {
-		PLAYER_STATE playerState = player.getState();
-		return playerState  == PlayController.PLAYER_STATE.PAUSED 
-				|| playerState == PlayController.PLAYER_STATE.STARTED
-				|| playerState == PlayController.PLAYER_STATE.PREPARED;
+		AbstractPlayer.PLAYER_STATE playerState = player.getState();
+		return playerState  == AbstractPlayer.PLAYER_STATE.PAUSED 
+				|| playerState == AbstractPlayer.PLAYER_STATE.STARTED
+				|| playerState == AbstractPlayer.PLAYER_STATE.PREPARED;
 	}
 	
 	@Override
@@ -347,7 +348,7 @@ public class PlayService extends Service
 	}
 
 	static public Notification buildNotification(Context context, Uri currentPlaying,
-												 PLAYER_STATE state ) {
+												 AbstractPlayer.PLAYER_STATE state ) {
 		String mediaTitle = "";
 		if( currentPlaying != null ) {
 			MediaInfo mi = new MediaInfo( context, currentPlaying );
@@ -406,7 +407,7 @@ public class PlayService extends Service
 	}
 
 	@Override
-	public PLAYER_STATE getState() {
+	public AbstractPlayer.PLAYER_STATE getState() {
 		return player.getState();
 	}
 
@@ -459,7 +460,7 @@ public class PlayService extends Service
 		int volume = -1;
 		StoryTellerApp app = (StoryTellerApp) context.getApplicationContext();
 		if( ( app != null && app.getMainActivityInForeground() ) 
-			|| player.getState() == PLAYER_STATE.STARTED ) {
+			|| player.getState() == AbstractPlayer.PLAYER_STATE.STARTED ) {
 			
 			AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 			Preferences pref = Preferences.getInstance();
@@ -486,11 +487,11 @@ public class PlayService extends Service
 											PLAY_PAUSE_TYPE.class,
 											null );
 		if( type != null ) {
-			pauseTypeChanged( type );
+			enableCaptureByPauseType( type );
 		}
 	}
 	
-	private void pauseTypeChanged(final PLAY_PAUSE_TYPE type) {
+	private void enableCaptureByPauseType(final PLAY_PAUSE_TYPE type) {
 		if( audioDataReceiver == null ) {
 			PauseAudioDataListener pauseDataListener
 				= new PauseAudioDataListener( player );
@@ -519,9 +520,9 @@ public class PlayService extends Service
         return new NotificationCompat.Action.Builder( icon, "", pendingIntent ).build();
     }
     
-    private static Action generatePlayPauseAction( Context context, PLAYER_STATE state ) {
+    private static Action generatePlayPauseAction( Context context, AbstractPlayer.PLAYER_STATE state ) {
     	int icon;
-    	if( state == PLAYER_STATE.STARTED ) {
+    	if( state == AbstractPlayer.PLAYER_STATE.STARTED ) {
     		icon = android.R.drawable.ic_media_pause;
     	} else {
     		icon = android.R.drawable.ic_media_play;
@@ -529,7 +530,7 @@ public class PlayService extends Service
         return generateAction( context, icon, ACTION_PLAYER_PLAY_PAUSE );
     }
     
-    private void showNotification(PLAYER_STATE state) {
+    private void showNotification(AbstractPlayer.PLAYER_STATE state) {
 		Notification notification
 			= buildNotification( this, playInfo.refreshCurrentPlaying(), state );
 		
@@ -537,8 +538,13 @@ public class PlayService extends Service
 	    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
     }
 
+//	@Override
+//	public void readyToPlay() {
+//		enableCaptureByPauseType( Preferences.getInstance().getPlayPauseType() );
+//	}
+//
 	@Override
-	public void stateChanged(PLAYER_STATE newState) {
+	public void stateChanged(AbstractPlayer.PLAYER_STATE newState) {
 		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
 		intent.putExtra( PlayerView.KEY_PLAYER_STATE, newState.name() );
 		sendBroadcast(intent);

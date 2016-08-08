@@ -3,10 +3,10 @@ package com.zsm.storyteller.play;
 import android.net.Uri;
 
 import com.zsm.storyteller.PlayInfo;
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 
 public interface PlayerNotifier {
-	void stateChanged( PLAYER_STATE newState );
+	
+	void stateChanged( AbstractPlayer.PLAYER_STATE newState );
 
 	void newAudioData( byte[] data );
 	

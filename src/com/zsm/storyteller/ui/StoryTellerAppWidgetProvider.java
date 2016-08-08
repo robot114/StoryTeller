@@ -18,8 +18,9 @@ import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
+import com.zsm.storyteller.play.AbstractPlayer;
+import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController;
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.preferences.Preferences;
@@ -41,20 +42,24 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		
 		Log.d( "update widget" );
 		startService( context );
-		addClickEvent(context, appWidgetManager, appWidgetIds,
-        			  PlayController.ACTION_PLAYER_PLAY_PAUSE,
-        			  R.id.imageViewWidgetPlay);
-        addClickEvent(context, appWidgetManager, appWidgetIds,
-        			  PlayController.ACTION_PLAYER_PLAY_NEXT,
-        			  R.id.imageViewWidgetNext);
-        addClickEvent(context, appWidgetManager, appWidgetIds,
-		  			  PlayController.ACTION_PLAYER_PLAY_FAST_FORWARD,
-		  			  R.id.imageViewWidgetForward);
-        addClickEvent(context, appWidgetManager, appWidgetIds,
-  			  		  PlayController.ACTION_PLAYER_MAIN_ACTIVITY,
-  			  		  R.id.layoutMainWidget);
+		addAllClickEvent(context, appWidgetManager);
         
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
+	}
+
+	private void addAllClickEvent(Context context, AppWidgetManager appWidgetManager) {
+		addClickEvent(context, appWidgetManager,
+        			  PlayController.ACTION_PLAYER_PLAY_PAUSE,
+        			  R.id.imageViewWidgetPlay);
+        addClickEvent(context, appWidgetManager, 
+        			  PlayController.ACTION_PLAYER_PLAY_NEXT,
+        			  R.id.imageViewWidgetNext);
+        addClickEvent(context, appWidgetManager,
+		  			  PlayController.ACTION_PLAYER_PLAY_FAST_FORWARD,
+		  			  R.id.imageViewWidgetForward);
+        addClickEvent(context, appWidgetManager, 
+  			  		  PlayController.ACTION_PLAYER_MAIN_ACTIVITY,
+  			  		  R.id.layoutMainWidget);
 	}
 	
 	private void startService( Context context ) {
@@ -80,8 +85,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	}
 	
 	private void addClickEvent(Context context, AppWidgetManager appWidgetManager,
-							   int[] appWidgetIds, String action,
-							   int viewResId) {
+							   String action, int viewResId) {
 		
 		// Perform this loop procedure for each App Widget that belongs to this provider
         Intent intent = new Intent(action);
@@ -108,17 +112,26 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 			return;
 		}
 		
+		AppWidgetManager appWidgetManager
+			= AppWidgetManager.getInstance(context.getApplicationContext());
+		if( PlayerView.ACTION_UPDATE_PLAYER_STATE
+								.equals( intent.getAction() ) ) {
+			
+			// Sometimes the widget does not response the clicking. 
+			// No idea about the reason
+			addAllClickEvent(context, appWidgetManager);
+		}
+		
 		Log.d( intent );
 		remoteViews
 			= new RemoteViews(context.getPackageName(), R.layout.main_widget);
 		if( playerViewReceiver.onReceive(context, intent) ) {
-			AppWidgetManager appWidgetManager
-				= AppWidgetManager.getInstance(context.getApplicationContext());
 			ComponentName widgets
 				= new ComponentName(context, StoryTellerAppWidgetProvider.class);
 		
 	        appWidgetManager.updateAppWidget(widgets, remoteViews);
 			remoteViews = null;
+			
 			return;
 		}
 		
@@ -134,7 +147,7 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	}
 
 	@Override
-	public void updatePlayerState(PLAYER_STATE state) {
+	public void updatePlayerState(AbstractPlayer.PLAYER_STATE state) {
 		setPlayPauseIcon(remoteViews, state,
 						 Preferences.getInstance().getPlayPauseType());
 	}
@@ -173,14 +186,14 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 		} );
 	}
 	
-	private void setPlayPauseIcon(RemoteViews rvs, PLAYER_STATE state,
+	private void setPlayPauseIcon(RemoteViews rvs, AbstractPlayer.PLAYER_STATE state,
 								  PLAY_PAUSE_TYPE pauseType) {
 		
 		int playIconId
 			= ( pauseType == PLAY_PAUSE_TYPE.CONTINUOUS )
 				? R.drawable.widget_play : R.drawable.widget_play_to;
 		playIconId
-			= (state == PLAYER_STATE.STARTED )
+			= (state == AbstractPlayer.PLAYER_STATE.STARTED )
 				? R.drawable.widget_pause : playIconId;
 		
 		rvs.setImageViewResource( R.id.imageViewWidgetPlay, playIconId );

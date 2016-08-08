@@ -5,7 +5,8 @@ import java.util.List;
 import android.content.Context;
 import android.net.Uri;
 
-import com.zsm.storyteller.play.PlayController.PLAYER_STATE;
+import com.zsm.storyteller.play.AbstractPlayer;
+import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 
 public interface PlayerView {
@@ -29,7 +30,7 @@ public interface PlayerView {
 	
 	void updateTime(int curretPosition, int duration);
 
-	void updatePlayerState(PLAYER_STATE state);
+	void updatePlayerState(AbstractPlayer.PLAYER_STATE state);
 
 	void setDataSource(Context context, Uri uri);
 

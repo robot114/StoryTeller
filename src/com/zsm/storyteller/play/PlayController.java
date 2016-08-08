@@ -5,9 +5,6 @@ import android.net.Uri;
 import com.zsm.storyteller.PlayInfo;
 
 public interface PlayController {
-	public enum PLAYER_STATE { 
-		IDLE, INITIALIZED, PREPARED, STARTED, PAUSED, STOPPED, PLAYBACKCOMPLETED }
-	
 	public enum PLAY_ORDER { BY_NAME, RANDOM }
 	public enum PLAY_PAUSE_TYPE { CONTINUOUS, TO_PAUSE }
 
@@ -78,10 +75,10 @@ public interface PlayController {
 	void playPause();
 
 	void onDestroy();
-
+	
 	void setPlayInfo(PlayInfo playInfo);
 
-	PlayController.PLAYER_STATE getState();
+	AbstractPlayer.PLAYER_STATE getState();
 
 	void enableCapture(String source, boolean enabled);
 }
