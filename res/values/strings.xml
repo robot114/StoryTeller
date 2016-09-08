@@ -36,5 +36,8 @@
     <string name="toContinue">Continue</string>
     <string name="infoOfModeChanged">Setting of playing changed</string>
     <string name="inputError">Input error, nothing changed</string>
+    <string name="permissionRequestTitle">Request for permission</string>
+    <string name="permissionRequestMicrophone">Request for permission of microphone, to display audio visialization and pause.</string>
+    <string name="permissionNoMicrophone">No permission of microphone, cannot display audio visialization and pause automatically.</string>
     
 </resources>

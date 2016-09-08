@@ -46,8 +46,7 @@ public class Preferences {
 	private static final String KEY_SKIP_HEADER = "SKIP_HEADER";
 	private static final String KEY_SKIP_HEADER_SECOND = "SKIP_HEADER_SECOND";
 	private static final String KEY_AUTO_START_PLAYING = "AUTO_START_PLAYING";
-	private static final String KEY_MAX_SILENCE_TIMES_TO_PAUSE
-									= "MAX_SILENCE_TIMES_TO_PAUSE";
+	private static final String KEY_SILENCE_TIME_TO_PAUSE = "SILENCE_TIME_TO_PAUSE";	// in ms
 	private static final String KEY_SILENCE_TOILENCE = "SILENCE_TOILENCE";
 	private static final String KEY_HEADSET_MUSIC_VOLUME = "HEADSET_MUSIC_VOLUME";
 
@@ -287,8 +286,8 @@ public class Preferences {
 		preferences.edit().putString(KEY_PLAY_TYPE_TO_PAUSE, type.name() ).commit();
 	}
 	
-	public int getMaxSilenceTimesToPause() {
-		return preferences.getInt( KEY_MAX_SILENCE_TIMES_TO_PAUSE, 2 );
+	public int getSilenceTimeToPause() {
+		return preferences.getInt( KEY_SILENCE_TIME_TO_PAUSE, 200 );
 	}
 
 	public int getSilenceToilence() {

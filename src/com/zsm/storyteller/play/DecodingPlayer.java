@@ -26,6 +26,11 @@ import android.net.Uri;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
+import com.zsm.storyteller.play.audio.listener.AudioCaptureSampler;
+import com.zsm.storyteller.play.audio.listener.AudioDataListener;
+import com.zsm.storyteller.play.audio.listener.AudioDataListener.DATA_FORMAT;
+import com.zsm.storyteller.play.audio.listener.AudioSampler;
+import com.zsm.storyteller.play.audio.listener.PushedAudioSampler;
 
 public class DecodingPlayer implements AbstractPlayer {
 
@@ -42,6 +47,9 @@ public class DecodingPlayer implements AbstractPlayer {
 			{END, IDLE, INITIALIZED, PREPARING, PREPARED, STARTED, PAUSED, STOPPED,
 		    	PLAYBACKCOMPLETED, END },
 		    };
+	
+	private boolean mPushedAudioSampler = true;
+	
 	private MediaExtractor mMediaExtractor;
 	private PLAYER_STATE mState;
 	
@@ -49,13 +57,13 @@ public class DecodingPlayer implements AbstractPlayer {
 	private OnPlayerErrorListener mOnErrorListener;
 	private OnPlayerCompletionListener mOnCompletionListener;
 	
-	private Uri mCurrentPlaying;
 	private MediaInfo mMediaInfo;
 	private int mTrackIndex;
 	private MediaCodec mDecoder;
 	private MediaFormat mInputFormat;
 	private MediaFormat mOutputFormat;
 	private AudioTrack mAudioTrack;
+	private int mSampleRate;
 
 	private Thread mPlayThread;
 	private boolean mReleased;
@@ -63,8 +71,12 @@ public class DecodingPlayer implements AbstractPlayer {
 	private BufferInfo mBufferInfo = new BufferInfo();
 	private boolean mMoreStreamData;
 	private int mSeekToMS;
+	private int mDuration;
+	private AudioSampler mAudioHandler;
+
+	private int mDefaultAudioCaptureRate;
 	
-	public DecodingPlayer() {
+	public DecodingPlayer( Context context ) {
 		mState = IDLE;
 		
 		mPlayThread = new Thread( new Runnable(){
@@ -77,14 +89,21 @@ public class DecodingPlayer implements AbstractPlayer {
 				}
 			}
 		} );
+		
+		if( mPushedAudioSampler ) {
+			mAudioHandler = new PushedAudioSampler( context, this );
+		} else {
+			mAudioHandler = new AudioCaptureSampler( context );
+		}
+		mDefaultAudioCaptureRate = mAudioHandler.getMaxCaptureRate();;
 	}
 	
 	@Override
 	public void reset() {
 		checkState( IDLE );
 		mState = IDLE;
-		mCurrentPlaying = null;
 		mMediaInfo = null;
+		mDuration = 0;
 	}
 
 	@Override
@@ -93,8 +112,8 @@ public class DecodingPlayer implements AbstractPlayer {
 		
 		checkState( INITIALIZED );
 		mMediaInfo = new MediaInfo( context, currentPlaying );
+		mDuration = mMediaInfo.getDuration();
 		mMediaExtractor = new MediaExtractor();
-		mCurrentPlaying = currentPlaying;
 		mMediaExtractor.setDataSource(context, currentPlaying, null);
 		mSeekToMS = 0;
 		mState = INITIALIZED;
@@ -150,8 +169,7 @@ public class DecodingPlayer implements AbstractPlayer {
 							.setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
 							.build();
 
-				int sampleRate
-					= mOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+				mSampleRate = mOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
 				int channelMask = AudioFormat.CHANNEL_OUT_STEREO;
 				if( mOutputFormat.containsKey( MediaFormat.KEY_CHANNEL_MASK ) ) {
 					channelMask
@@ -162,13 +180,13 @@ public class DecodingPlayer implements AbstractPlayer {
 				
 				AudioFormat audioFormat
 					= new AudioFormat.Builder()
-							.setSampleRate(sampleRate)
+							.setSampleRate(mSampleRate)
 							.setChannelMask(channelMask)
 							.setEncoding(AudioFormat.ENCODING_DEFAULT)
 							.build();
 
 				int bufferSize
-					= AudioTrack.getMinBufferSize( sampleRate,
+					= AudioTrack.getMinBufferSize( mSampleRate,
 												   channelMask,	// to support smth like 5., 7.1
 												   AudioFormat.ENCODING_PCM_16BIT );
 				mAudioTrack
@@ -176,13 +194,15 @@ public class DecodingPlayer implements AbstractPlayer {
 									 AudioTrack.MODE_STREAM,
 									 AudioManager.AUDIO_SESSION_ID_GENERATE);
 
-				Log.i( "AudioPlayer asyncprepared", "sample rate", sampleRate,
+				enableAudioDataListener( false );
+				Log.i( "AudioPlayer asyncprepared", "sample rate", mSampleRate,
 						"channelMask", channelMask, "audioFormat", audioFormat,
 						"audioTrack bufferSize", bufferSize );
 				mState = PLAYER_STATE.PREPARED;
 				if (mOnPreparedListener != null) {
 					mOnPreparedListener.onPrepared(DecodingPlayer.this);
 				}
+				mAudioHandler.setAudioSession(mAudioTrack.getAudioSessionId());
 				if( mSeekToMS != 0 ) {
 					mMediaExtractor.seekTo(mSeekToMS*1000L,  MediaExtractor.SEEK_TO_CLOSEST_SYNC );
 				}
@@ -202,7 +222,7 @@ public class DecodingPlayer implements AbstractPlayer {
 			throw new IllegalStateException( "Invalid state: " + mState );
 		}
 		
-		return mMediaInfo.getDuration();
+		return mDuration;
 	}
 
 	@Override
@@ -225,6 +245,10 @@ public class DecodingPlayer implements AbstractPlayer {
 			
 		} else if( mState == PLAYBACKCOMPLETED ) {
 			mMediaExtractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+			mDecoder.flush();
+			mAudioTrack.flush();
+			mAudioTrack.stop();
+			mDecoder.stop();
 			mDecoder.configure(mInputFormat, null, null, 0);
 			mDecoder.start();
 		} else {
@@ -233,6 +257,7 @@ public class DecodingPlayer implements AbstractPlayer {
 		mAudioTrack.play();
 		mState = STARTED;
 		if( mPlayThread.getState() == Thread.State.NEW ) {
+			mPlayThread.setPriority( 6 );
 			mPlayThread.start();
 		}
 		Log.i( "AudioPlayer started" );
@@ -240,6 +265,9 @@ public class DecodingPlayer implements AbstractPlayer {
 
 	@Override
 	synchronized public void pause() throws IllegalStateException {
+		if( mState == PLAYBACKCOMPLETED ) {
+			return;
+		}
 		checkState( PAUSED );
 		mAudioTrack.pause();
 		mState = PAUSED;
@@ -248,6 +276,9 @@ public class DecodingPlayer implements AbstractPlayer {
 
 	@Override
 	synchronized public void stop() throws IllegalStateException {
+		if( mState == PLAYBACKCOMPLETED ) {
+			return;
+		}
 		checkState( STOPPED );
 		
 		mState = STOPPED;
@@ -285,7 +316,8 @@ public class DecodingPlayer implements AbstractPlayer {
 	@Override
 	synchronized public void seekTo(int msec) {
 		if( mState == IDLE || mState == END ) {
-			throw new IllegalStateException( "Invalid state: " + mState );
+			Log.i( "Seek on invalid state", "state", mState, "msec", msec );
+			return;
 		}
 		if( mState == STARTED || mState == PAUSED ) {
 			seekToInner(msec);
@@ -368,10 +400,19 @@ public class DecodingPlayer implements AbstractPlayer {
 		Log.d( "Output buffer is available fom decoder.", "buffer id",
 				outputBufferId );
 		ByteBuffer outputBuffer = mDecoder.getOutputBuffer(outputBufferId);
+		int remaining = outputBuffer.remaining();
+		if( mPushedAudioSampler && mAudioHandler.getEnabled() ) {
+			int maxLen = mAudioHandler.getMaxDataLength();
+			outputBuffer.mark();
+			byte[] data = new byte[ Math.min(maxLen, remaining)];
+			outputBuffer.get(data);
+			outputBuffer.reset();
+			((PushedAudioSampler)mAudioHandler).updateData( DATA_FORMAT.WAVEFORM, mSampleRate, data );
+		}
 		// bufferFormat is identical to outputFormat
 		// outputBuffer is ready to be processed or rendered.
 		int size
-			= mAudioTrack.write(outputBuffer, outputBuffer.remaining(),
+			= mAudioTrack.write(outputBuffer, remaining,
 								AudioTrack.WRITE_BLOCKING);
 		mDecoder.releaseOutputBuffer(outputBufferId, false);
 		Log.d( "Written data to the audiotrack, and buffer released.", 
@@ -379,20 +420,24 @@ public class DecodingPlayer implements AbstractPlayer {
 	}
 
 	synchronized private void handleDecoderBuffer() {
-		int inputBufferId = mDecoder.dequeueInputBuffer(0);
-		if (inputBufferId >= 0) {
-			mMoreStreamData = fillDecoderInputBuffer(inputBufferId);
+		if( mState == STARTED ) {
+			int inputBufferId = mDecoder.dequeueInputBuffer(0);
+			if (inputBufferId >= 0) {
+				mMoreStreamData = fillDecoderInputBuffer(inputBufferId);
+			}
 		}
-		int outputBufferId = mDecoder.dequeueOutputBuffer(mBufferInfo, 0);
-		if (outputBufferId >= 0) {
-			handleDecoderOutputBuffer(outputBufferId, mMoreStreamData);
-		} else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-			// Subsequent data will conform to new format.
-			// Can ignore if using getOutputFormat(outputBufferId)
-			mOutputFormat = mDecoder.getOutputFormat(); // option B
-		} else if( !mMoreStreamData && mOnCompletionListener != null ) {
-			mOnCompletionListener.onCompletion( this );
-			mState = PLAYBACKCOMPLETED;
+		if( mState == STARTED || mState == PAUSED ) {
+			int outputBufferId = mDecoder.dequeueOutputBuffer(mBufferInfo, 0);
+			if (outputBufferId >= 0) {
+				handleDecoderOutputBuffer(outputBufferId, mMoreStreamData);
+			} else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+				// Subsequent data will conform to new format.
+				// Can ignore if using getOutputFormat(outputBufferId)
+				mOutputFormat = mDecoder.getOutputFormat(); // option B
+			} else if( !mMoreStreamData && mOnCompletionListener != null ) {
+				mOnCompletionListener.onCompletion( this );
+				mState = PLAYBACKCOMPLETED;
+			}
 		}
 
 	}
@@ -407,5 +452,26 @@ public class DecodingPlayer implements AbstractPlayer {
 							"Invalid state. from state: " + mState
 							+ ", to state: " + newState ); 
 		}
+	}
+
+	@Override
+	public PLAYER_STATE getState() {
+		return mState;
+	}
+
+	@Override
+	public void setAudioDataListener(AudioDataListener l, int rate) {
+		rate = rate <= 0 ? 100000 : rate;
+		mAudioHandler.setDataListener(l, rate);
+	}
+
+	@Override
+	synchronized public void enableAudioDataListener(boolean enable) {
+		mAudioHandler.setEnabled(enable);
+	}
+
+	@Override
+	public int getAudioCaptureRate() {
+		return mDefaultAudioCaptureRate;
 	}
 }

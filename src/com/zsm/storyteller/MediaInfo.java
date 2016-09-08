@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 
+import com.zsm.log.Log;
 import com.zsm.util.TextUtil;
 
 public class MediaInfo {
@@ -39,7 +40,8 @@ public class MediaInfo {
 			metaRetriver.setDataSource( context, uri );
 			title = getMetaData(MediaMetadataRetriever.METADATA_KEY_TITLE,
 								title);
-		} catch( IllegalArgumentException | SecurityException  e) {
+		} catch( Exception  e) {
+			Log.w( "Set data source to MediaMetadataRetriever failed", uri);
 		}
 	}
 

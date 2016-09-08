@@ -80,5 +80,5 @@ public interface PlayController {
 
 	AbstractPlayer.PLAYER_STATE getState();
 
-	void enableCapture(String source, boolean enabled);
+	void enableAudioListener(String source, boolean enabled);
 }

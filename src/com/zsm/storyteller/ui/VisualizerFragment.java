@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.zsm.storyteller.R;
-import com.zsm.storyteller.play.AudioDataListener;
+import com.zsm.storyteller.play.audio.listener.AudioDataListener;
 import com.zsm.storyteller.ui.visualizer.BarGraphVisualizer;
 import com.zsm.storyteller.ui.visualizer.VisualizerView;
 
@@ -43,8 +43,12 @@ public class VisualizerFragment extends Fragment implements AudioDataListener {
 	}
 
 	@Override
-	public void updateData(byte[] data) {
-		mVisualizerView.update(data);
+	public void updateData(DATA_FORMAT format, int samplingRate, byte[] data) {
+		mVisualizerView.updateData(format, samplingRate, data);
 	}
-	
+
+	@Override
+	public void setCaptureRate(int captureRate) {
+		// Nothing need to be done
+	}
 }

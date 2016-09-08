@@ -1,7 +1,6 @@
 package com.zsm.storyteller.play;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import android.content.Context;
 import android.media.MediaPlayer;
@@ -10,16 +9,22 @@ import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.net.Uri;
 
+import com.zsm.storyteller.play.audio.listener.AudioDataListener;
+import com.zsm.storyteller.play.audio.listener.AudioSampler;
+import com.zsm.storyteller.play.audio.listener.AudioCaptureSampler;
+
 public class AndroidMediaPlayer implements AbstractPlayer {
 
 	private PLAYER_STATE mState;
 	private PlayController mController;
 	private MediaPlayer mPlayer;
-
-	public AndroidMediaPlayer( PlayController controller ) {
+	private AudioSampler mAudioHandler;
+	
+	public AndroidMediaPlayer( Context context, PlayController controller ) {
 		mController = controller;
 		mPlayer = new MediaPlayer();
 		mState = PLAYER_STATE.IDLE;
+		mAudioHandler = new AudioCaptureSampler( context );
 	}
 	
 	@Override
@@ -121,9 +126,31 @@ public class AndroidMediaPlayer implements AbstractPlayer {
 		mPlayer.setOnPreparedListener(new OnPreparedListener(){
 			@Override
 			public void onPrepared(MediaPlayer mp) {
+		        int audioSessionId = getAudioSessionId();
+		        mAudioHandler.setAudioSession(audioSessionId);
+		        enableAudioDataListener( false );
 				listener.onPrepared( AndroidMediaPlayer.this );
 			}
 		} );
 	}
 
+	@Override
+	public PLAYER_STATE getState() {
+		return mState;
+	}
+
+	@Override
+	public void setAudioDataListener(AudioDataListener l, int rate) {
+		mAudioHandler.setDataListener(l, rate);
+	}
+
+	@Override
+	synchronized public void enableAudioDataListener(boolean enable) {
+		mAudioHandler.setEnabled(enable);
+	}
+
+	@Override
+	public int getAudioCaptureRate() {
+		return mAudioHandler.getMaxCaptureRate();
+	}
 }

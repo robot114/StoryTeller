@@ -3,12 +3,13 @@ package com.zsm.storyteller.play;
 import android.net.Uri;
 
 import com.zsm.storyteller.PlayInfo;
+import com.zsm.storyteller.play.audio.listener.AudioDataListener.DATA_FORMAT;
 
 public interface PlayerNotifier {
 	
 	void stateChanged( AbstractPlayer.PLAYER_STATE newState );
 
-	void newAudioData( byte[] data );
+	void newAudioData( DATA_FORMAT format, int samplingRate, byte[] data );
 	
 	void updateTime( int ellapsed, int duration );
 	

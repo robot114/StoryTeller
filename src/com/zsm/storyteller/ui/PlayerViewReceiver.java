@@ -31,6 +31,7 @@ public class PlayerViewReceiver {
 				if( state != null ) {
 					view.updatePlayerState( state );
 				}
+				Log.d(state);
 				break;
 			case PlayController.ACTION_UPDATE_PLAY_PAUSE_TYPE:
 				PLAY_PAUSE_TYPE type
@@ -52,6 +53,7 @@ public class PlayerViewReceiver {
 				int time = intent.getIntExtra(PlayerView.KEY_ELLAPSED_TIME, 0);
 				int duration = intent.getIntExtra(PlayerView.KEY_DURATION, 0);
 				view.updateTime(time, duration);
+				Log.d( "time", time, "duration", duration );
 				break;
 			case PlayerView.ACTION_UPDATE_PLAY_INFO:
 				PlayInfo pi = intent.getParcelableExtra( PlayerView.KEY_PLAY_INFO );

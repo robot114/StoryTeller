@@ -100,7 +100,7 @@ public class RemotePlayer implements PlayController {
 	}
 
 	@Override
-	public void enableCapture(String source, boolean enabled) {
+	public void enableAudioListener(String source, boolean enabled) {
 		Bundle bundle = new Bundle();
 		bundle.putBoolean( KEY_ENABLE_CAPTURE, enabled );
 		bundle.putString( KEY_CAPTURE_SOURCE, source );

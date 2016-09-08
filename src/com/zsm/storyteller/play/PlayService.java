@@ -28,6 +28,9 @@ import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
+import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
+import com.zsm.storyteller.play.audio.listener.AudioDataListener.DATA_FORMAT;
+import com.zsm.storyteller.play.audio.listener.PauseAudioDataListener;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.storyteller.ui.MainActivity;
 import com.zsm.storyteller.ui.PlayerView;
@@ -48,6 +51,8 @@ public class PlayService extends Service
 	private AudioManager audioManager;
 	private ComponentName buttonReceiverCompName;
 	private AudioDataReceiver audioDataReceiver;
+
+	private PauseAudioDataListener mPauseDataListener;
 
 	public final class ServiceBinder extends Binder {
 		public PlayService getService() {
@@ -101,7 +106,7 @@ public class PlayService extends Service
 		remoteViews.setImageViewResource( R.id.imageViewWidgetPlay,
 				  						  R.drawable.widget_play);
 		appWidgetManager.updateAppWidget(allWidgetIds, remoteViews);
-		player.disableCaputre();
+		player.disableAudioListener();
 	}
 
 	private void initPlayer() {
@@ -220,7 +225,7 @@ public class PlayService extends Service
 
 	@Override
 	public void playPause() {
-		if( getState() == AbstractPlayer.PLAYER_STATE.STARTED || allowToPlay() ) {
+		if( getState() == PLAYER_STATE.STARTED || allowToPlay() ) {
 			player.playPause();
 		} else {
 			promptNotAllowed();
@@ -232,10 +237,10 @@ public class PlayService extends Service
 	}
 
 	private boolean inPlayingState() {
-		AbstractPlayer.PLAYER_STATE playerState = player.getState();
-		return playerState  == AbstractPlayer.PLAYER_STATE.PAUSED 
-				|| playerState == AbstractPlayer.PLAYER_STATE.STARTED
-				|| playerState == AbstractPlayer.PLAYER_STATE.PREPARED;
+		PLAYER_STATE playerState = player.getState();
+		return playerState  == PLAYER_STATE.PAUSED 
+				|| playerState == PLAYER_STATE.STARTED
+				|| playerState == PLAYER_STATE.PREPARED;
 	}
 	
 	@Override
@@ -312,7 +317,7 @@ public class PlayService extends Service
 					boolean enabled
 						= intent.getBooleanExtra(KEY_ENABLE_CAPTURE, false );
 					String source = intent.getStringExtra( KEY_CAPTURE_SOURCE );
-					player.enableCapture( source, enabled );
+					player.enableAudioListener( source, enabled );
 				}
 				break;
 			default:
@@ -348,7 +353,7 @@ public class PlayService extends Service
 	}
 
 	static public Notification buildNotification(Context context, Uri currentPlaying,
-												 AbstractPlayer.PLAYER_STATE state ) {
+												 PLAYER_STATE state ) {
 		String mediaTitle = "";
 		if( currentPlaying != null ) {
 			MediaInfo mi = new MediaInfo( context, currentPlaying );
@@ -407,13 +412,13 @@ public class PlayService extends Service
 	}
 
 	@Override
-	public AbstractPlayer.PLAYER_STATE getState() {
+	public PLAYER_STATE getState() {
 		return player.getState();
 	}
 
 	@Override
-	public void enableCapture(String source, boolean enabled) {
-		player.enableCapture(source, enabled);
+	public void enableAudioListener(String source, boolean enabled) {
+		player.enableAudioListener(source, enabled);
 	}
 	
 	private class PlayControllerReceiver extends BroadcastReceiver {
@@ -460,7 +465,7 @@ public class PlayService extends Service
 		int volume = -1;
 		StoryTellerApp app = (StoryTellerApp) context.getApplicationContext();
 		if( ( app != null && app.getMainActivityInForeground() ) 
-			|| player.getState() == AbstractPlayer.PLAYER_STATE.STARTED ) {
+			|| player.getState() == PLAYER_STATE.STARTED ) {
 			
 			AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 			Preferences pref = Preferences.getInstance();
@@ -487,29 +492,36 @@ public class PlayService extends Service
 											PLAY_PAUSE_TYPE.class,
 											null );
 		if( type != null ) {
-			enableCaptureByPauseType( type );
+			enableCapture( type, player.getState() );
 		}
 	}
 	
-	private void enableCaptureByPauseType(final PLAY_PAUSE_TYPE type) {
-		if( audioDataReceiver == null ) {
-			PauseAudioDataListener pauseDataListener
-				= new PauseAudioDataListener( player );
-			Preferences preferences = Preferences.getInstance();
-			pauseDataListener
-				.setMaxSilenceTimes( preferences.getMaxSilenceTimesToPause() );
-			pauseDataListener
-				.setSilenceToilence( preferences.getSilenceToilence() );
-			audioDataReceiver = new AudioDataReceiver( pauseDataListener );
+	private void enableCapture(final PLAY_PAUSE_TYPE type, PLAYER_STATE newState ) {
+		if( player == null || newState.ordinal() < PLAYER_STATE.STARTED.ordinal()
+				|| newState.ordinal() >= PLAYER_STATE.END.ordinal() ) {
+			return;
 		}
 		
-		boolean toPause = ( PLAY_PAUSE_TYPE.TO_PAUSE == type );
+		if( audioDataReceiver == null ) {
+			mPauseDataListener = new PauseAudioDataListener( player );
+			mPauseDataListener.setCaptureRate( player.getAudioCaptureRate() );
+			Preferences preferences = Preferences.getInstance();
+			mPauseDataListener
+				.setSilenceTimeToPause( preferences.getSilenceTimeToPause() );
+			mPauseDataListener
+				.setSilenceToSilence( preferences.getSilenceToilence() );
+			audioDataReceiver = new AudioDataReceiver( mPauseDataListener );
+		}
+		
+		boolean toPause 
+			= ( PLAY_PAUSE_TYPE.TO_PAUSE == type && newState == PLAYER_STATE.STARTED );
+		
 		if( toPause ) {
 			audioDataReceiver.registerMe(this);
 		} else {
 			audioDataReceiver.unregisterMe(this);
 		}
-		player.enableCapture( getClass().getName(), toPause );
+		player.enableAudioListener( getClass().getName(), toPause );
 	}
 
     private static Action generateAction( Context context, int icon, String intentAction ) {
@@ -520,9 +532,9 @@ public class PlayService extends Service
         return new NotificationCompat.Action.Builder( icon, "", pendingIntent ).build();
     }
     
-    private static Action generatePlayPauseAction( Context context, AbstractPlayer.PLAYER_STATE state ) {
+    private static Action generatePlayPauseAction( Context context, PLAYER_STATE state ) {
     	int icon;
-    	if( state == AbstractPlayer.PLAYER_STATE.STARTED ) {
+    	if( state == PLAYER_STATE.STARTED ) {
     		icon = android.R.drawable.ic_media_pause;
     	} else {
     		icon = android.R.drawable.ic_media_play;
@@ -530,7 +542,7 @@ public class PlayService extends Service
         return generateAction( context, icon, ACTION_PLAYER_PLAY_PAUSE );
     }
     
-    private void showNotification(AbstractPlayer.PLAYER_STATE state) {
+    private void showNotification(PLAYER_STATE state) {
 		Notification notification
 			= buildNotification( this, playInfo.refreshCurrentPlaying(), state );
 		
@@ -538,13 +550,9 @@ public class PlayService extends Service
 	    	.from(this).notify(PlayService.NOTIFICATION_ID, notification);
     }
 
-//	@Override
-//	public void readyToPlay() {
-//		enableCaptureByPauseType( Preferences.getInstance().getPlayPauseType() );
-//	}
-//
 	@Override
-	public void stateChanged(AbstractPlayer.PLAYER_STATE newState) {
+	public void stateChanged(PLAYER_STATE newState) {
+		enableCapture( Preferences.getInstance().getPlayPauseType(), newState );
 		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
 		intent.putExtra( PlayerView.KEY_PLAYER_STATE, newState.name() );
 		sendBroadcast(intent);
@@ -552,9 +560,10 @@ public class PlayService extends Service
 	}
 
 	@Override
-	public void newAudioData(byte[] data) {
+	public void newAudioData(DATA_FORMAT format, int samplingRate, byte[] data) {
 		Intent intent = new Intent( AudioDataReceiver.ACTION_UPDATE_AUDIO_DATA );
 		intent.putExtra( AudioDataReceiver.KEY_AUDIO_DATA, data );
+		intent.putExtra( AudioDataReceiver.KEY_AUDIO_DATA_FORMAT, format );
 		sendBroadcast(intent);
 	}
 

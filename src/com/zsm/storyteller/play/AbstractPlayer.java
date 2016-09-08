@@ -2,6 +2,8 @@ package com.zsm.storyteller.play;
 
 import java.io.IOException;
 
+import com.zsm.storyteller.play.audio.listener.AudioDataListener;
+
 import android.content.Context;
 import android.net.Uri;
 import android.view.SurfaceHolder;
@@ -170,5 +172,36 @@ public interface AbstractPlayer {
      * @param listener the callback that will be run
      */
 	void setOnPreparedListener(OnPlayerPreparedListener listener);
+
+	/**
+	 * Set the listener to the player. The player should notify the listener 
+	 * at the {@code rate}.
+	 *  
+	 * @param l the listener to handle the data. Null to remove the listener.
+	 * @param rate the max rate, in milliHz, the listener should be notified. 
+	 * 			If the rate is 0, the rate will be determined by the player itself.
+	 */
+	void setAudioDataListener( AudioDataListener l, int rate );
+	
+	/**
+	 * Enable or disable the audio data listener
+	 * 
+	 * @param enable true to enable the listener; false to disable the listener
+	 */
+	void enableAudioDataListener(boolean enable);
+
+	/**
+	 * Get the state of the player
+	 * 
+	 * @return state of the player
+	 */
+	PLAYER_STATE getState();
+
+	/**
+	 * Get the capture rate of the player it offers
+	 * 
+	 * @return capture rate when the player is captured
+	 */
+	int getAudioCaptureRate();
 
 }

@@ -19,7 +19,6 @@ import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.AbstractPlayer;
-import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
 import com.zsm.storyteller.play.PlayService;

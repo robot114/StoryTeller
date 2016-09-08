@@ -14,6 +14,7 @@ public class MediaInfoFragment extends Fragment {
 
 	private View view;
 	private MediaInfoView mediaInfoView;
+	private Uri mDataSource = null;
 
 	public MediaInfoFragment() {
 		super();
@@ -28,12 +29,18 @@ public class MediaInfoFragment extends Fragment {
 				= inflater.inflate( R.layout.media_info_fragment, 
 									container, false );
 			mediaInfoView = (MediaInfoView)view.findViewById( R.id.viewMediaInfo );
+			if( mDataSource != null ) {
+				mediaInfoView.setDataSource( mDataSource );
+			}
 		}
 		return view;
 	}
 
 	public void setDataSource(Uri uri) {
-		mediaInfoView.setDataSource( uri );
+		if(mediaInfoView != null ) {
+			mediaInfoView.setDataSource( uri );
+		}
+		mDataSource = uri;
 	}
 
 	@Override

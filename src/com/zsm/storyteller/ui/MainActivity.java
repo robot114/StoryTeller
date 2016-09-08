@@ -40,11 +40,11 @@ import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.play.AbstractPlayer.PLAYER_STATE;
-import com.zsm.storyteller.play.AudioDataListener;
 import com.zsm.storyteller.play.AudioDataReceiver;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
+import com.zsm.storyteller.play.audio.listener.AudioDataListener;
 import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.play.RemotePlayer;
 import com.zsm.storyteller.preferences.MainPreferenceFragment;
@@ -427,13 +427,12 @@ public class MainActivity extends FragmentActivity
 				visualizeReceiver = new AudioDataReceiver( vl );
 			}
 			visualizeReceiver.registerMe( this );
-			player.enableCapture( captureSource, enabled );
 		} else {
 			if( visualizeReceiver != null ) {
 				visualizeReceiver.unregisterMe( this );
-				player.enableCapture( captureSource, enabled );
 			}
 		}
+		player.enableAudioListener( captureSource, enabled );
 	}
 
 	@Override
