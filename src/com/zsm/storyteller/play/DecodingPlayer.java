@@ -99,15 +99,17 @@ public class DecodingPlayer implements AbstractPlayer {
 	}
 	
 	@Override
-	public void reset() {
+	synchronized public void reset() {
 		checkState( IDLE );
-		mState = IDLE;
 		mMediaInfo = null;
 		mDuration = 0;
+		releaseWithoutCheck();
+		
+		mState = IDLE;
 	}
 
 	@Override
-	public void setDataSource(Context context, Uri currentPlaying)
+	synchronized public void setDataSource(Context context, Uri currentPlaying)
 			throws IOException, IllegalStateException {
 		
 		checkState( INITIALIZED );
@@ -128,89 +130,93 @@ public class DecodingPlayer implements AbstractPlayer {
 
 			@Override
 			public void run() {
-				Log.i( "AudioPlayer begins to asyncprepare" );
-				int numTracks = mMediaExtractor.getTrackCount();
-				mTrackIndex = -1;
-				String mime = null;
-				mInputFormat = null;
-				for (int i = 0; i < numTracks; ++i) {
-					mInputFormat = mMediaExtractor.getTrackFormat(i);
-					mime = mInputFormat.getString(MediaFormat.KEY_MIME);
-					Log.d( "Exract audio from media.", i, "mime", mime );
-					if (mime.startsWith("audio")) {
-						mMediaExtractor.selectTrack(i);
-						mTrackIndex = i;
-						Log.d( "Audio track found.", "track id", mTrackIndex, "format", mInputFormat );
-						break;
-					}
-				}
-				
-				if( mTrackIndex < 0 ) {
-					Log.e( "No audio track found!" );
-					handlePrepareError();
-					return;
-				}
-				
-				try {
-					mDecoder = MediaCodec.createDecoderByType( mime );
-				} catch (IOException e) {
-					Log.e( e, "Create decoder failed!", "mime type", mime );
-					handlePrepareError();
-					return;
-				}
-				
-				mDecoder.configure(mInputFormat, null, null, 0);
-				
-				mOutputFormat = mDecoder.getOutputFormat();
-
-				AudioAttributes attr
-					= new AudioAttributes.Builder()
-							.setUsage(AudioAttributes.USAGE_MEDIA)
-							.setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-							.build();
-
-				mSampleRate = mOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-				int channelMask = AudioFormat.CHANNEL_OUT_STEREO;
-				if( mOutputFormat.containsKey( MediaFormat.KEY_CHANNEL_MASK ) ) {
-					channelMask
-						= mOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_MASK);
-				} else if( mOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT) == 1 ) {
-					channelMask = AudioFormat.CHANNEL_OUT_MONO;
-				}
-				
-				AudioFormat audioFormat
-					= new AudioFormat.Builder()
-							.setSampleRate(mSampleRate)
-							.setChannelMask(channelMask)
-							.setEncoding(AudioFormat.ENCODING_DEFAULT)
-							.build();
-
-				int bufferSize
-					= AudioTrack.getMinBufferSize( mSampleRate,
-												   channelMask,	// to support smth like 5., 7.1
-												   AudioFormat.ENCODING_PCM_16BIT );
-				mAudioTrack
-					= new AudioTrack(attr, audioFormat, bufferSize,
-									 AudioTrack.MODE_STREAM,
-									 AudioManager.AUDIO_SESSION_ID_GENERATE);
-
-				enableAudioDataListener( false );
-				Log.i( "AudioPlayer asyncprepared", "sample rate", mSampleRate,
-						"channelMask", channelMask, "audioFormat", audioFormat,
-						"audioTrack bufferSize", bufferSize );
-				mState = PLAYER_STATE.PREPARED;
-				if (mOnPreparedListener != null) {
-					mOnPreparedListener.onPrepared(DecodingPlayer.this);
-				}
-				mAudioHandler.setAudioSession(mAudioTrack.getAudioSessionId());
-				if( mSeekToMS != 0 ) {
-					mMediaExtractor.seekTo(mSeekToMS*1000L,  MediaExtractor.SEEK_TO_CLOSEST_SYNC );
-				}
-				mMoreStreamData = true;
+				prepare();
 			}
 		} ).start();
 	}
 
+	synchronized private void prepare() {
+		Log.i( "AudioPlayer begins to asyncprepare" );
+		int numTracks = mMediaExtractor.getTrackCount();
+		mTrackIndex = -1;
+		String mime = null;
+		mInputFormat = null;
+		for (int i = 0; i < numTracks; ++i) {
+			mInputFormat = mMediaExtractor.getTrackFormat(i);
+			mime = mInputFormat.getString(MediaFormat.KEY_MIME);
+			Log.d( "Exract audio from media.", i, "mime", mime );
+			if (mime.startsWith("audio")) {
+				mMediaExtractor.selectTrack(i);
+				mTrackIndex = i;
+				Log.d( "Audio track found.", "track id", mTrackIndex, "format", mInputFormat );
+				break;
+			}
+		}
+		
+		if( mTrackIndex < 0 ) {
+			Log.e( "No audio track found!" );
+			handlePrepareError();
+			return;
+		}
+		
+		try {
+			mDecoder = MediaCodec.createDecoderByType( mime );
+		} catch (IOException e) {
+			Log.e( e, "Create decoder failed!", "mime type", mime );
+			handlePrepareError();
+			return;
+		}
+		
+		mDecoder.configure(mInputFormat, null, null, 0);
+		
+		mOutputFormat = mDecoder.getOutputFormat();
+
+		AudioAttributes attr
+			= new AudioAttributes.Builder()
+					.setUsage(AudioAttributes.USAGE_MEDIA)
+					.setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+					.build();
+
+		mSampleRate = mOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+		int channelMask = AudioFormat.CHANNEL_OUT_STEREO;
+		if( mOutputFormat.containsKey( MediaFormat.KEY_CHANNEL_MASK ) ) {
+			channelMask
+				= mOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_MASK);
+		} else if( mOutputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT) == 1 ) {
+			channelMask = AudioFormat.CHANNEL_OUT_MONO;
+		}
+		
+		AudioFormat audioFormat
+			= new AudioFormat.Builder()
+					.setSampleRate(mSampleRate)
+					.setChannelMask(channelMask)
+					.setEncoding(AudioFormat.ENCODING_DEFAULT)
+					.build();
+
+		int bufferSize
+			= AudioTrack.getMinBufferSize( mSampleRate,
+										   channelMask,	// to support smth like 5., 7.1
+										   AudioFormat.ENCODING_PCM_16BIT );
+		mAudioTrack
+			= new AudioTrack(attr, audioFormat, bufferSize,
+							 AudioTrack.MODE_STREAM,
+							 AudioManager.AUDIO_SESSION_ID_GENERATE);
+
+		enableAudioDataListener( false );
+		Log.i( "AudioPlayer asyncprepared", "sample rate", mSampleRate,
+				"channelMask", channelMask, "audioFormat", audioFormat,
+				"audioTrack bufferSize", bufferSize );
+		mState = PLAYER_STATE.PREPARED;
+		if (mOnPreparedListener != null) {
+			mOnPreparedListener.onPrepared(DecodingPlayer.this);
+		}
+		mAudioHandler.setAudioSession(mAudioTrack.getAudioSessionId());
+		if( mSeekToMS != 0 ) {
+			mMediaExtractor.seekTo(mSeekToMS*1000L,  MediaExtractor.SEEK_TO_CLOSEST_SYNC );
+		}
+		mMoreStreamData = true;
+	}
+	
 	@Override
 	public int getCurrentPosition() {
 		return (int)( mMediaExtractor.getSampleTime() /1000L);
@@ -295,6 +301,10 @@ public class DecodingPlayer implements AbstractPlayer {
 		checkState( END );
 		mMediaInfo = null;
 		mReleased = true;
+		releaseWithoutCheck();
+	}
+
+	private void releaseWithoutCheck() {
 		if( mAudioTrack != null ) {
 			mAudioTrack.stop();
 			mAudioTrack.release();
@@ -376,7 +386,7 @@ public class DecodingPlayer implements AbstractPlayer {
 	 * @param inputBufferId input buffer id of the decoder
 	 * @return true, have more data from the extractor; false reach end of the stream
 	 */
-	private boolean fillDecoderInputBuffer(int inputBufferId) {
+	synchronized private boolean fillDecoderInputBuffer(int inputBufferId) {
 		Log.d( "Input buffer is available for decoder.",
 				"buffer id", inputBufferId );
 		ByteBuffer inputBuffer = mDecoder.getInputBuffer(inputBufferId);
@@ -474,4 +484,5 @@ public class DecodingPlayer implements AbstractPlayer {
 	public int getAudioCaptureRate() {
 		return mDefaultAudioCaptureRate;
 	}
+
 }

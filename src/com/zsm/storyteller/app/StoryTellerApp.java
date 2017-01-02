@@ -44,7 +44,7 @@ public class StoryTellerApp extends Application {
 		super.onCreate();
 		LogPreferences.init( this );
 		LogInstaller.installFileLog( this );
-		Log.setGlobalLevel( Log.LEVEL.DEBUG );
+		Log.setGlobalLevel( Log.LEVEL.WARNING );
 		
 		Preferences.init( this );
 		

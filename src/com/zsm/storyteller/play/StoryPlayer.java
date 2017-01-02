@@ -274,20 +274,18 @@ class StoryPlayer implements PlayController {
 	@Override
 	public void toNext() {
 		Uri uri = getPlayInfoInner().nextOne( playRandomly() );
+		stop();
 		if( uri != null ) {
 			play(uri, 0);
-		} else {
-			stop();
 		}
 	}
 
 	@Override
 	public void toPrevious() {
 		Uri uri = getPlayInfoInner().previousOne( playRandomly() );
+		stop();
 		if( uri != null ) {
 			play(uri, 0);
-		} else {
-			stop();
 		}
 	}
 	

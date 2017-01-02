@@ -62,7 +62,7 @@
                 <action android:name="com.zsm.storyteller.PLAYER.MAIN_ACTIVITY"/>
                 <action android:name="com.zsm.storyteller.PLAYER.ACTION_PLAYER_EMPTY"/>
                 <action android:name="com.zsm.storyteller.PLAYER.GET_STATE"/>
-                </intent-filter>
+            </intent-filter>
         </service>
         <receiver android:name=".play.MediaButtonReceiver">
             <intent-filter>
