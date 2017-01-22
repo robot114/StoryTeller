@@ -212,14 +212,16 @@ public class DecodingPlayer implements AbstractPlayer {
 		}
 		mAudioHandler.setAudioSession(mAudioTrack.getAudioSessionId());
 		if( mSeekToMS != 0 ) {
-			mMediaExtractor.seekTo(mSeekToMS*1000L,  MediaExtractor.SEEK_TO_CLOSEST_SYNC );
+			mMediaExtractor.seekTo( mSeekToMS*1000L,
+									MediaExtractor.SEEK_TO_CLOSEST_SYNC );
 		}
 		mMoreStreamData = true;
 	}
 	
 	@Override
 	public int getCurrentPosition() {
-		return (int)( mMediaExtractor.getSampleTime() /1000L);
+		return mMediaExtractor == null	// Because of time sequence, mMediaExtractor may be null
+				? 0 : (int)( mMediaExtractor.getSampleTime() /1000L);
 	}
 
 	@Override
