@@ -226,11 +226,10 @@ public class DecodingPlayer implements AbstractPlayer {
 
 	@Override
 	public int getDuration() {
-		if( mState == IDLE || mState == END ) {
-			throw new IllegalStateException( "Invalid state: " + mState );
+		if( mDuration > 0 ) {
+			return mDuration;
 		}
-		
-		return mDuration;
+		throw new IllegalStateException( "Invalid state: " + mState );
 	}
 
 	@Override

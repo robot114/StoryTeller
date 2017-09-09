@@ -33,9 +33,6 @@ public class Preferences {
 	private int forwardSkipSecondProgressValue = -1;
 	private FORWARD_SKIP_TYPE forwardSkipType = null;
 
-	private boolean skipHeader;
-	private int skipHeaderSecond = -1;
-
 	public static final String KEY_LIST_TYPE = "LIST_TYPE";
 	public static final String KEY_LIST_INFO = "LIST_INFO";
 	public static final String KEY_CURRENT_PLAYING = "CURRENT_PLAYING";
@@ -214,21 +211,11 @@ public class Preferences {
 	}
 
 	public boolean getSkipHeaderAuto() {
-		if( skipHeaderSecond >= 0 ) {
-			return skipHeader;
-		}
-		
-		skipHeader = preferences.getBoolean( KEY_SKIP_HEADER, false );
-		return skipHeader;
+		return preferences.getBoolean( KEY_SKIP_HEADER, false );
 	}
 
 	public int getSkipHeaderValue() {
-		if( skipHeaderSecond >= 0 ) {
-			return skipHeaderSecond;
-		}
-		
-		skipHeaderSecond = preferences.getInt( KEY_SKIP_HEADER_SECOND, 0 );
-		return skipHeaderSecond;
+		return preferences.getInt( KEY_SKIP_HEADER_SECOND, 0 );
 	}
 	
 	synchronized public void setSkipHeader( boolean skipHeader, int skipSec ) {
@@ -237,9 +224,6 @@ public class Preferences {
 			.putBoolean(KEY_SKIP_HEADER, skipHeader)
 			.putInt(KEY_SKIP_HEADER_SECOND, skipSec)
 			.commit();
-		
-		this.skipHeader = skipHeader;
-		skipHeaderSecond = skipSec;
 	}
 	
 	public boolean autoStartPlaying() {

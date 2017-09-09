@@ -26,7 +26,8 @@ public class StoryTellerApp extends Application {
 	
 	private static final String[] EXTENSION = {
 		".3gp", ".aac", ".flac", ".m4a", ".mp4", ".mid", ".mp3", ".xmf",
-		".mxmf", ".rtx", ".rtttl", ".ota", ".imy", ".ogg", ".mkv", ".wav"
+		".mxmf", ".rtx", ".rtttl", ".ota", ".imy", ".ogg", ".mkv", ".wav",
+		".wma"
 	};
 
 	PlayController player;

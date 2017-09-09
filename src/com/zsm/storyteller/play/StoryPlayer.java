@@ -205,20 +205,23 @@ class StoryPlayer implements PlayController {
 	}
 
 	synchronized private void updatePlayerViewMedia(Uri uri, long startPosition) {
-		int headerLength = Preferences.getInstance().getSkipHeaderValue()*1000;
-		long sp = shouldSkipHeader(startPosition) ? headerLength : startPosition;
-		getPlayInfoInner().setCurrentPlaying( uri );
-		getPlayInfoInner().setCurrentPlayingPosition( sp );
 		mPlayerNotifier.updateDataSource( uri );
 		MediaInfo currentMediaInfo = new MediaInfo( context, uri );
-		updateTime((int)sp, currentMediaInfo.getDuration(), 0);		
+		int duration = currentMediaInfo.getDuration();
+		
+		int headerLength = Preferences.getInstance().getSkipHeaderValue()*1000;
+		long sp = shouldSkipHeader( startPosition, headerLength, duration )
+					? headerLength : startPosition;
+		
+		getPlayInfoInner().setCurrentPlaying( uri );
+		getPlayInfoInner().setCurrentPlayingPosition( sp );
+		updateTime((int)sp, duration, 0);		
 	}
 
-	private boolean shouldSkipHeader(long startPosition) {
+	private boolean shouldSkipHeader( long startPosition, int headerLength,
+									  long duration ) {
 		Preferences pref = Preferences.getInstance();
-		return startPosition == 0 
-				&& pref.getSkipHeaderAuto() 
-				&& pref.getSkipHeaderValue()*1000 < mediaPlayer.getDuration();
+		return startPosition == 0 && pref.getSkipHeaderAuto() && headerLength < duration;
 	}
 
 	@Override
