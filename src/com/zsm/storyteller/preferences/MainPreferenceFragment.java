@@ -1,7 +1,10 @@
 package com.zsm.storyteller.preferences;
 
 import android.os.Bundle;
+import android.preference.Preference;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceFragment;
+import android.widget.Toast;
 
 import com.zsm.driver.android.preference.PreferenceUtil;
 import com.zsm.driver.android.preference.PreferenceUtil.ExtrasActionAfterChange;
@@ -39,5 +42,22 @@ public class MainPreferenceFragment extends PreferenceFragment {
 						Preferences.sendPlayTypeChangeMessage( getActivity(), type );
 					}
 				});
+		
+		Preference decoder
+			= findPreference( Preferences.KEY_SYSTEM_DEFAULT_DECODER );
+		decoder.setOnPreferenceChangeListener(new OnPreferenceChangeListener(){
+			@Override
+			public boolean onPreferenceChange(Preference preference,
+											  Object newValue) {
+				
+				Toast
+					.makeText(getActivity(),
+							  R.string.prefPromptSystemDefaultDecoderChanger,
+							  Toast.LENGTH_LONG)
+					.show();
+				
+				return true;
+			}
+		} );
 	}
 }

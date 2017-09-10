@@ -27,11 +27,27 @@
             android:enabled="true"
             android:persistent="true"
             android:selectable="true"/>
-    <CheckBoxPreference android:title="@string/prefPauseWhenNoisy" android:key="@string/prefKeyPauseWhenNoisy" android:summaryOn="@string/prefNoisyPause" android:summaryOff="@string/prefNoisyNotPause" /></PreferenceScreen>
-    <PreferenceScreen android:title="@string/prefDisplaySetting" android:icon="@drawable/phone" android:summary="@string/prefDisplaySettingSummary">
-        <CheckBoxPreference android:key="@string/prefKeyScreenOnWhenPlay" android:summaryOn="@string/prefScreenOnSummaryOn" android:summaryOff="@string/prefScreenOnSummaryOff" android:icon="@drawable/light_on" android:title="@string/prefScreenOnWhenPlay"/>
-        
-        
+    <CheckBoxPreference
+        android:title="@string/prefPauseWhenNoisy"
+        android:key="@string/prefKeyPauseWhenNoisy"
+        android:summaryOn="@string/prefNoisyPause"
+        android:summaryOff="@string/prefNoisyNotPause" />
     </PreferenceScreen>
-    
+    <PreferenceScreen
+        android:title="@string/prefDisplaySetting"
+        android:icon="@drawable/phone"
+        android:summary="@string/prefDisplaySettingSummary">
+        <CheckBoxPreference
+            android:key="@string/prefKeyScreenOnWhenPlay"
+            android:summaryOn="@string/prefScreenOnSummaryOn"
+            android:summaryOff="@string/prefScreenOnSummaryOff"
+            android:icon="@drawable/light_on"
+            android:title="@string/prefScreenOnWhenPlay"/>
+    </PreferenceScreen>
+    <CheckBoxPreference
+        android:summaryOff="@string/prefSystemDecoderSummaryOff"
+        android:summaryOn="@string/prefSystemDecoderSummaryOn"
+        android:title="@string/prefSystemDecoderTitle"
+        android:key="@string/prefKeySystemDefaultDecoder"
+        android:icon="@drawable/decoder" android:defaultValue="false" android:persistent="true"/>
 </PreferenceScreen>

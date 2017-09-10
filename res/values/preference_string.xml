@@ -30,5 +30,10 @@
     <string name="prefScreenOnSummaryOn">Keep the screen on when play</string>
     <string name="prefScreenOnSummaryOff">Do not keep the screen on when play</string>
     <string name="prefScreenOnWhenPlay">Keep screen on when play</string>
+    <string name="prefSystemDecoderSummaryOn">Play with system default decoder</string>
+    <string name="prefSystemDecoderSummaryOff">Play with software decoder</string>
+    <string name="prefSystemDecoderTitle">System Default Decoder</string>
+    <string name="prefKeySystemDefaultDecoder">KEY_SYSTEM_DEFAULT_DECODER</string>
+    <string name="prefPromptSystemDefaultDecoderChanger">Restart the player to make change the decoder!</string>
     
 </resources>

@@ -30,7 +30,7 @@ public class StoryTellerApp extends Application {
 		".wma"
 	};
 
-	PlayController player;
+	private PlayController player;
 	private PlayFileHandler playFileHandler;
 	private Semaphore playerSemaphore = new Semaphore(0);
 

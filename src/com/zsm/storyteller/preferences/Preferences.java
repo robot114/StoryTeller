@@ -50,6 +50,7 @@ public class Preferences {
 	public static String KEY_PLAY_ORDER = null;
 	public static String KEY_PLAY_TYPE_TO_PAUSE = null;
 	public static String KEY_PAUSE_WHEN_NOISY = null;
+	static String KEY_SYSTEM_DEFAULT_DECODER = null;
 	private static String KEY_SCREEN_WHEN_PLAY = null;
 	
 	private Preferences( Context context ) {
@@ -77,6 +78,8 @@ public class Preferences {
 		KEY_PLAY_TYPE_TO_PAUSE = r.getString( R.string.prefKeyPlayTypeToPause );
 		KEY_PAUSE_WHEN_NOISY = r.getString( R.string.prefKeyPauseWhenNoisy );
 		KEY_SCREEN_WHEN_PLAY = r.getString( R.string.prefKeyScreenOnWhenPlay );
+		KEY_SYSTEM_DEFAULT_DECODER
+			= r.getString( R.string.prefKeySystemDefaultDecoder );
 	}
 	
 	static public Preferences getInstance() {
@@ -319,5 +322,9 @@ public class Preferences {
 
 	public void setScreenOnWhenPlay(boolean b) {
 		preferences.edit().putBoolean(KEY_SCREEN_WHEN_PLAY, b).commit();
+	}
+	
+	public boolean useSystemDefaultDecoder() {
+		return preferences.getBoolean( KEY_SYSTEM_DEFAULT_DECODER, false );
 	}
 }

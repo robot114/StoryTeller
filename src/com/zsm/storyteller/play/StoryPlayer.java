@@ -84,8 +84,12 @@ class StoryPlayer implements PlayController {
 	}
 
 	private void initPlayer(Context context) {
-//		mediaPlayer = new AndroidMediaPlayer( context, this );
-		mediaPlayer = new DecodingPlayer( context );
+		if( Preferences.getInstance().useSystemDefaultDecoder() ) {
+			mediaPlayer = new AndroidMediaPlayer( context, this );
+		} else {
+			mediaPlayer = new DecodingPlayer( context );
+		}
+		
 		mediaPlayer.reset();
 		mediaPlayer.setWakeMode( context, PowerManager.PARTIAL_WAKE_LOCK );
 		mediaPlayer.setOnErrorListener( new OnPlayerErrorListener() {
