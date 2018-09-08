@@ -20,6 +20,7 @@ import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.util.file.FileExtensionFilter;
 
+
 public class StoryTellerApp extends Application {
 
 	private static FileExtensionFilter[] FILE_FILTER_ARRAY;
@@ -45,7 +46,7 @@ public class StoryTellerApp extends Application {
 		super.onCreate();
 		LogPreferences.init( this );
 		LogInstaller.installFileLog( this );
-		Log.setGlobalLevel( Log.LEVEL.WARNING );
+		Log.setGlobalLevel( Log.LEVEL.DEBUG );
 		
 		Preferences.init( this );
 		

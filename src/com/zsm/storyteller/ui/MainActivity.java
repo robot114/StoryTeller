@@ -25,6 +25,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ExpandableListView.OnGroupClickListener;
@@ -35,6 +36,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.zsm.android.ui.TimedProgressBar;
+import com.zsm.android.ui.quickAction.QuickAction;
+import com.zsm.android.ui.quickAction.QuickAction.OnActionItemClickListener;
 import com.zsm.log.Log;
 import com.zsm.storyteller.MediaInfo;
 import com.zsm.storyteller.R;
@@ -44,9 +47,9 @@ import com.zsm.storyteller.play.AudioDataReceiver;
 import com.zsm.storyteller.play.PlayController;
 import com.zsm.storyteller.play.PlayController.PLAY_ORDER;
 import com.zsm.storyteller.play.PlayController.PLAY_PAUSE_TYPE;
-import com.zsm.storyteller.play.audio.listener.AudioDataListener;
 import com.zsm.storyteller.play.PlayService;
 import com.zsm.storyteller.play.RemotePlayer;
+import com.zsm.storyteller.play.audio.listener.AudioDataListener;
 import com.zsm.storyteller.preferences.MainPreferenceFragment;
 import com.zsm.storyteller.preferences.Preferences;
 
@@ -82,6 +85,16 @@ public class MainActivity extends FragmentActivity
 		setContentView(R.layout.main);
 
 		playPause = (ImageView)findViewById( R.id.imageViewPlay );
+		playPause.setOnLongClickListener( new OnLongClickListener() {
+
+			@Override
+			public boolean onLongClick(View v) {
+				showPlayPopupMenu( v );
+				return true;
+			}
+			
+		} );
+		
 		playingText = (TextView)findViewById( R.id.textViewPlayingFile );
 		
 		initListView();
@@ -154,11 +167,7 @@ public class MainActivity extends FragmentActivity
 
 	private void initPlayIcons() {
 		Resources r = getResources();
-		boolean playContinuous
-			= Preferences.getInstance().getPlayPauseType()
-				== PLAY_PAUSE_TYPE.CONTINUOUS;
-		int playIconId = playContinuous ? R.drawable.play : R.drawable.play_to;
-		playIcon = r.getDrawable( playIconId);
+		playIcon = getPlayIcon(Preferences.getInstance().getPlayPauseType());
 		pauseIcon = r.getDrawable( R.drawable.pause );
 	}
 
@@ -236,6 +245,39 @@ public class MainActivity extends FragmentActivity
 		registerReceiver(receiver, filter);
 	}
 	
+	private void showPlayPopupMenu(View v) {
+		//create QuickAction. Use QuickAction.VERTICAL or QuickAction.HORIZONTAL param to define layout 
+        //orientation
+		final QuickAction quickAction = new QuickAction(this, QuickAction.VERTICAL);
+		quickAction.setRootViewId( R.layout.play_pause_menu_vertical );
+		quickAction.addActionItems(this, false,
+				new int[]{PLAY_PAUSE_TYPE.CONTINUOUS.ordinal(),
+						  PLAY_PAUSE_TYPE.TO_PAUSE.ordinal(),
+						  PLAY_PAUSE_TYPE.TO_SLEEP.ordinal()},
+				new int[]{-1, -1, -1},
+				new int[]{R.drawable.play,
+						  R.drawable.play_to,
+						  R.drawable.timer_play});
+		
+		quickAction.setOnActionItemClickListener( new OnActionItemClickListener() {
+
+			@Override
+			public void onItemClick(QuickAction source, int pos, int actionId) {
+				PLAY_PAUSE_TYPE[] typeValues = PLAY_PAUSE_TYPE.values();
+				if( actionId >= typeValues.length ) {
+					Log.w( "Invalid action id: ", actionId );
+					return;
+				}
+				
+				PLAY_PAUSE_TYPE type = typeValues[actionId];
+				Preferences.getInstance().setPlayTypeToPause(type);
+				Preferences.sendPlayTypeChangeMessage(MainActivity.this, type);
+			}
+		});
+		
+		quickAction.show(v);
+	}
+
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -298,22 +340,14 @@ public class MainActivity extends FragmentActivity
 	
 	public void onOpenOne( View v ) {
 		((StoryTellerApp)getApplication())
-			.getPlayFileHandler().openOne(this, getCurrentPlayingFile(), player);
+			.getPlayFileHandler().openOne(this, currentPlaying, player);
 	}
 	
 	public void onOpenFolder( View v ) {
 		((StoryTellerApp)getApplication())
-			.getPlayFileHandler().openFolder( this, getCurrentPlayingFile(), player );
+			.getPlayFileHandler().openFolder( this, currentPlaying, player );
 	}
 
-	private String getCurrentPlayingFile() {
-		if( currentPlaying != null ) {
-			return currentPlaying.getPath();
-		}
-		
-		return null;
-	}
-	
 	public void onPlayPause( View v ) {
 		player.playPause();
 	}
@@ -472,12 +506,31 @@ public class MainActivity extends FragmentActivity
 	}
 
 	private void updatePlayPauseType(PLAY_PAUSE_TYPE type) {
-		int iconId
-			= ( type == PLAY_PAUSE_TYPE.CONTINUOUS )
-				? R.drawable.play : R.drawable.play_to;
-		
-		playIcon = getResources().getDrawable( iconId );
+		playIcon = getPlayIcon(type);
 		updatePlayPauseIcon(playerState);
+	}
+
+	public Drawable getPlayIcon(PLAY_PAUSE_TYPE type) {
+		int iconId;
+		
+		switch( type ) {
+			case CONTINUOUS:
+				iconId = R.drawable.play;
+				break;
+			case TO_PAUSE:
+				iconId = R.drawable.play_to;
+				break;
+			case TO_SLEEP:
+				iconId = R.drawable.timer_play;
+				break;
+			default:
+				iconId = R.drawable.play;
+				Log.w( "Invalid play pause type", type );
+				break;
+		}
+		
+		Drawable icon = getResources().getDrawable( iconId );
+		return icon;
 	}
 	
 	private void updatePlayPauseIcon(PLAYER_STATE state) {

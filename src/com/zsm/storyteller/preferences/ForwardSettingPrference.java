@@ -46,6 +46,8 @@ public class ForwardSettingPrference extends Preference {
 	private SeekBar seekBarPercent;
 	private SeekBar seekBarSecond;
 
+	// For the listeners, the views passed in is not the ones on the Preference Screen.
+	// The views are stored in a hashtable, to get them in the listeners
 	private Hashtable<View, Hashtable<COMPONENT_KEY, View>> views;
 	private CheckBox checkBoxSkipHeader;
 	private EditText editSkipHeader;

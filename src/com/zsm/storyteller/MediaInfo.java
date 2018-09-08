@@ -1,7 +1,5 @@
 package com.zsm.storyteller;
 
-import java.io.File;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,16 +18,11 @@ public class MediaInfo {
 	private int duration = -1;
 	private Bitmap image;
 	private int imageHeight;
-	private String path;
+	private Uri mUri;
 	
 	public MediaInfo( Context context, Uri uri ) {
-		this.path = uri.getPath();
+		this.mUri = uri;
 		init(context, uri);
-	}
-
-	public MediaInfo( Context context, File file ) {
-		this.path = file.getPath();
-		init( context, Uri.fromFile(file) );
 	}
 
 	private void init(Context context, Uri uri) {
@@ -54,8 +47,8 @@ public class MediaInfo {
 		return name;
 	}
 	
-	public String getPath() {
-		return path;
+	public Uri getUri() {
+		return mUri;
 	}
 	
 	public Bitmap getImage( int targetHeight ) {

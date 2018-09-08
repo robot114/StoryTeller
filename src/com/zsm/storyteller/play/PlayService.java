@@ -14,7 +14,9 @@ import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.ResultReceiver;
 import android.support.v4.app.NotificationCompat.Action;
 import android.support.v4.app.NotificationManagerCompat;
@@ -39,6 +41,8 @@ import com.zsm.storyteller.ui.StoryTellerAppWidgetProvider;
 public class PlayService extends Service
 				implements PlayController, OnAudioFocusChangeListener, PlayerNotifier {
 
+	private static final int MINUTE_TO_MILLIS = 60*1000;
+
 	private static final int NOTIFICATION_REQUEST_CODE = 1;
 
 	public static final int NOTIFICATION_ID = 1;
@@ -53,6 +57,10 @@ public class PlayService extends Service
 	private AudioDataReceiver audioDataReceiver;
 
 	private PauseAudioDataListener mPauseDataListener;
+
+	private Runnable mSleepRunner;
+
+	private Handler mSleepHandler;
 
 	public final class ServiceBinder extends Binder {
 		public PlayService getService() {
@@ -227,6 +235,9 @@ public class PlayService extends Service
 	public void playPause() {
 		if( getState() == PLAYER_STATE.STARTED || allowToPlay() ) {
 			player.playPause();
+			if( isPlayToSleep() ) {
+				startSleepTimer();
+			}
 		} else {
 			promptNotAllowed();
 		}
@@ -236,6 +247,38 @@ public class PlayService extends Service
 		}
 	}
 
+	private void startSleepTimer() {
+		if( mSleepHandler == null ) {	// No sleep runner running
+			mSleepHandler = new Handler( Looper.getMainLooper() );
+			if( mSleepRunner == null ) {
+				mSleepRunner = new Runnable() {
+					@Override
+					public void run() {
+						if( isPlayToSleep() ) {
+							pause( true );
+						}
+						mSleepHandler = null;
+					}
+				};
+			}
+			
+			long time = Preferences.getInstance().getPlaySleepTime() * MINUTE_TO_MILLIS;
+			mSleepHandler.postDelayed( mSleepRunner, time );
+		}
+	}
+	
+	private void stopSleepTimer() {
+		if( mSleepHandler != null ) {
+			mSleepHandler.removeCallbacks(mSleepRunner);
+		}
+		mSleepHandler = null;
+	}
+
+	private boolean isPlayToSleep() {
+		return Preferences.getInstance().getPlayPauseType()
+				== PLAY_PAUSE_TYPE.TO_SLEEP;
+	}
+	
 	private boolean inPlayingState() {
 		PLAYER_STATE playerState = player.getState();
 		return playerState  == PLAYER_STATE.PAUSED 
@@ -490,13 +533,36 @@ public class PlayService extends Service
 			= IntentUtil.getEnumValueIntent(intent,
 											PlayController.KEY_PLAY_PAUSE_TYPE,
 											PLAY_PAUSE_TYPE.class,
-											null );
-		if( type != null ) {
-			enableCapture( type, player.getState() );
+											PLAY_PAUSE_TYPE.CONTINUOUS );
+		PLAYER_STATE state = player.getState();
+		
+		changePlayPauseType(type, state);
+	}
+
+	public void changePlayPauseType(PLAY_PAUSE_TYPE type, PLAYER_STATE state) {
+		switch( type ) {
+			case CONTINUOUS:
+				playContinously();
+				break;
+			case TO_PAUSE:
+				enableCapture( state );
+				break;
+			case TO_SLEEP:
+				startSleepTimer();
+				break;
+			default:
+				Log.w("Invalid play pause type", type );
+				playContinously();
+				break;
 		}
 	}
 	
-	private void enableCapture(final PLAY_PAUSE_TYPE type, PLAYER_STATE newState ) {
+	private void playContinously() {
+		disableCapture();
+		stopSleepTimer();
+	}
+
+	private void enableCapture( PLAYER_STATE newState ) {
 		if( player == null || newState.ordinal() < PLAYER_STATE.STARTED.ordinal()
 				|| newState.ordinal() >= PLAYER_STATE.END.ordinal() ) {
 			return;
@@ -513,15 +579,17 @@ public class PlayService extends Service
 			audioDataReceiver = new AudioDataReceiver( mPauseDataListener );
 		}
 		
-		boolean toPause 
-			= ( PLAY_PAUSE_TYPE.TO_PAUSE == type && newState == PLAYER_STATE.STARTED );
-		
-		if( toPause ) {
-			audioDataReceiver.registerMe(this);
-		} else {
-			audioDataReceiver.unregisterMe(this);
+		audioDataReceiver.registerMe(this);
+		player.enableAudioListener( getClass().getName(), true );
+	}
+
+	private void disableCapture() {
+		if( audioDataReceiver != null ) {
+			audioDataReceiver.unregisterMe( this );
 		}
-		player.enableAudioListener( getClass().getName(), toPause );
+		if( player != null ) {
+			player.enableAudioListener( getClass().getName(), false );
+		}
 	}
 
     private static Action generateAction( Context context, int icon, String intentAction ) {
@@ -552,7 +620,10 @@ public class PlayService extends Service
 
 	@Override
 	public void stateChanged(PLAYER_STATE newState) {
-		enableCapture( Preferences.getInstance().getPlayPauseType(), newState );
+		PLAY_PAUSE_TYPE playPauseType
+			= Preferences.getInstance().getPlayPauseType();
+		
+		changePlayPauseType( playPauseType, newState );
 		Intent intent = new Intent( PlayerView.ACTION_UPDATE_PLAYER_STATE );
 		intent.putExtra( PlayerView.KEY_PLAYER_STATE, newState.name() );
 		sendBroadcast(intent);

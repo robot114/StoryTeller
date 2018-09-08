@@ -174,7 +174,7 @@ class StoryPlayer implements PlayController {
 		assert( timeTimerTask.state != TASK_STATE.STOP );
 		timeTimerTask.state = TASK_STATE.RUNNING;
 	}
-
+	
 	@Override
 	public void forward() {
 		if( mediaPlayer.isPlaying() ) {
@@ -327,7 +327,8 @@ class StoryPlayer implements PlayController {
 			return;
 		}
 		
-		switch( mediaPlayer.getState() ) {
+		PLAYER_STATE state = mediaPlayer.getState();
+		switch( state ) {
 			case STOPPED:
 			case IDLE:
 			case INITIALIZED:
@@ -338,7 +339,7 @@ class StoryPlayer implements PlayController {
 				play();
 				break;
 			default:
-				Log.e( new Exception( "Invalid state: " + mediaPlayer.getState() ) );
+				Log.e( new Exception( "Invalid state: " + state ) );
 				break;
 		}
 	}
@@ -373,7 +374,7 @@ class StoryPlayer implements PlayController {
 	@Override
 	public void setPlayInfo(PlayInfo pi) {
 		playInfo = pi;
-		playInfo.getPlayList(StoryTellerApp.getAudioFileFilter(context), true);
+		playInfo.getPlayList(context, StoryTellerApp.getAudioFileFilter(context), true);
 		mPlayerNotifier.updatePlayList( playInfo );
 		Uri currentPlaying = playInfo.refreshCurrentPlaying();
 		if( currentPlaying == null ) {
@@ -402,7 +403,7 @@ class StoryPlayer implements PlayController {
 	private PlayInfo getPlayInfoInner() {
 		if( playInfo == null ) {
 			playInfo = Preferences.getInstance().readPlayListInfo();
-			playInfo.getPlayList( StoryTellerApp.getAudioFileFilter(context), true );
+			playInfo.getPlayList( context, StoryTellerApp.getAudioFileFilter(context), true );
 		}
 		
 		return playInfo;

@@ -20,6 +20,8 @@ import com.zsm.storyteller.ui.PlayerView;
 
 public class Preferences {
 
+	private static final int DEFAULT_SLEEP_TIME = 5;
+
 	public enum FORWARD_SKIP_TYPE { BY_PERCENT, BY_SECOND };
 	
 	static private Preferences instance;
@@ -46,6 +48,7 @@ public class Preferences {
 	private static final String KEY_SILENCE_TIME_TO_PAUSE = "SILENCE_TIME_TO_PAUSE";	// in ms
 	private static final String KEY_SILENCE_TOILENCE = "SILENCE_TOILENCE";
 	private static final String KEY_HEADSET_MUSIC_VOLUME = "HEADSET_MUSIC_VOLUME";
+	private static final String KEY_PLAY_SLEEP_TIME = "PLAY_SLEEP_TIME";
 
 	public static String KEY_PLAY_ORDER = null;
 	public static String KEY_PLAY_TYPE_TO_PAUSE = null;
@@ -326,5 +329,36 @@ public class Preferences {
 	
 	public boolean useSystemDefaultDecoder() {
 		return preferences.getBoolean( KEY_SYSTEM_DEFAULT_DECODER, false );
+	}
+
+	public int getPlaySleepTime() {
+//		int sleepTime = DEFAULT_SLEEP_TIME;
+//		try {
+//			String strTime = preferences.getString(KEY_PLAY_SLEEP_TIME, "" );
+//			sleepTime = Integer.valueOf(strTime);
+//		} catch ( Exception e ) {
+//			Log.i(e, "Get sleep time failed");
+//		}
+		
+		int sleepTime;
+		try {
+			sleepTime = preferences.getInt( KEY_PLAY_SLEEP_TIME, DEFAULT_SLEEP_TIME);
+		} catch ( Exception e ) {
+			Log.i(e, "Get sleep time failed");
+			sleepTime = DEFAULT_SLEEP_TIME;
+			setPlaySleepTime(sleepTime);
+		}
+		
+		return sleepTime;
+	}
+
+	public void setPlaySleepTime(int time) {
+		preferences.edit()
+			.putInt(KEY_PLAY_SLEEP_TIME, time).commit();
+	}
+
+	public void clear() {
+		Log.d( "All preferences are cleared!" );
+		preferences.edit().clear().commit();
 	}
 }

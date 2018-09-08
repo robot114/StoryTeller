@@ -15,5 +15,6 @@
     <string-array name="playType">
         <item >@string/prefPlayTypeContinuously</item>
         <item >@string/prefPlayTypeToPause</item>
+        <item >@string/prefPlayTypeToSleep</item>
     </string-array>
 </resources>

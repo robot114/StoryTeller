@@ -1,21 +1,22 @@
 package com.zsm.storyteller;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.v4.provider.DocumentFile;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.preferences.Preferences;
 import com.zsm.util.file.FileExtensionFilter;
-import com.zsm.util.file.FileUtilities;
+import com.zsm.util.file.android.DocumentFileUtilities;
 
 public class PlayInfo implements Parcelable {
 
@@ -120,7 +121,7 @@ public class PlayInfo implements Parcelable {
 		return playList;
 	}
 	
-	public List<Uri> getPlayList( FileExtensionFilter filter,
+	public List<Uri> getPlayList( Context context, FileExtensionFilter filter,
 								  boolean forceRefresh ) {
 		
 		if( listInfo == null ) {
@@ -131,11 +132,11 @@ public class PlayInfo implements Parcelable {
 			return playList;
 		}
 		playList = new ArrayList<Uri>();
-		File f = new File( listInfo.getPath() );
+		DocumentFile document = DocumentFile.fromSingleUri(context, listInfo);
 		if( listType == LIST_TYPE.FOLDER ) {
-			scanFolder( f, playList, filter );
+			scanDirectory( context, document, playList, filter );
 		} else {
-			if( !f.exists() || !f.isFile() ) {
+			if( !document.exists() || !document.isFile() ) {
 				return null;
 			}
 			playList.add( listInfo );
@@ -144,30 +145,32 @@ public class PlayInfo implements Parcelable {
 		return playList;
 	}
 
-	private void scanFolder( File folder, List<Uri> list,
-							 FileExtensionFilter fileFilter ) {
+	private void scanDirectory( Context context, DocumentFile folder,
+								List<Uri> list, FileExtensionFilter fileFilter ) {
 		
 		if( !folder.exists() || !folder.isDirectory() ) {
 			return;
 		}
 		
-		File[] fs = FileUtilities.listFile( folder, fileFilter, true );
-		if( fs == null ) {
+		DocumentFile[] docs
+			= DocumentFileUtilities.listFiles( context, folder.getUri(),
+											   fileFilter, true, null );
+		if( docs == null ) {
 			Log.w( "No file scaned!", folder );
 			return;
 		}
-		Arrays.sort( fs, new Comparator<File>() {
+		Arrays.sort( docs, new Comparator<DocumentFile>() {
 			@Override
-			public int compare(File lhs, File rhs) {
+			public int compare(DocumentFile lhs, DocumentFile rhs) {
 				return lhs.getName().compareToIgnoreCase( rhs.getName() );
 			}
 		});
 		
-		for( File f : fs ) {
-			if( f.isDirectory() ) {
-				scanFolder( f, list, fileFilter );
+		for( DocumentFile doc : docs ) {
+			if( doc.isDirectory() ) {
+				scanDirectory( context, doc, list, fileFilter );
 			} else {
-				list.add( Uri.fromFile( f ) );
+				list.add( doc.getUri() );
 			}
 		}
 	}

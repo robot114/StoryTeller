@@ -8,17 +8,33 @@
 		android:title="@string/autoStartTitle"
 		android:persistent="true"
 		android:defaultValue="true"/>
-    <ListPreference
-        android:entries="@array/playType"
-        android:key="@string/prefKeyPlayTypeToPause"
+<!--     <ListPreference -->
+<!--         android:entries="@array/playType" -->
+<!--         android:key="@string/prefKeyPlayTypeToPause" -->
+<!--         android:title="@string/prefTitlePlayTypeToPause" -->
+<!--         android:enabled="true" -->
+<!--         android:persistent="true" -->
+<!--         android:selectable="true"/> -->
+<!--     <EditTextPreference -->
+<!--         android:key"@string/prefKeyPlayPauseSleepTime" -->
+<!--         android:title="@string/prefPlayPauseSleepTime" -->
+<!--         android:persistent="true" -->
+<!--         android:dialogTitle="@string/prefPlayPauseSleepTime" -->
+<!--         android:numeric="integer"/> -->
+	
+    <PreferenceScreen
         android:title="@string/prefTitlePlayTypeToPause"
-        android:enabled="true"
-        android:persistent="true"
-        android:selectable="true"/>
+        android:icon="@drawable/play"
+        android:summary="@string/prefDisplaySettingSummary">
+	    <com.zsm.storyteller.preferences.PlayPausePreference
+	        android:layout="@layout/play_pause_type_setting"/>
+    </PreferenceScreen>
+	    
     <PreferenceScreen 
-        android:icon="@drawable/setting"
-        android:title="@string/playingSetting">
-        <com.zsm.storyteller.preferences.ForwardSettingPrference
+	        android:icon="@drawable/setting"
+	        android:title="@string/playingSetting">
+    
+	<com.zsm.storyteller.preferences.ForwardSettingPrference
             android:layout="@layout/forward_setting"/>
         <ListPreference
             android:entries="@array/playOrderType"
@@ -27,12 +43,12 @@
             android:enabled="true"
             android:persistent="true"
             android:selectable="true"/>
-    <CheckBoxPreference
-        android:title="@string/prefPauseWhenNoisy"
-        android:key="@string/prefKeyPauseWhenNoisy"
-        android:summaryOn="@string/prefNoisyPause"
-        android:summaryOff="@string/prefNoisyNotPause" />
-    </PreferenceScreen>
+	    <CheckBoxPreference
+	        android:title="@string/prefPauseWhenNoisy"
+	        android:key="@string/prefKeyPauseWhenNoisy"
+	        android:summaryOn="@string/prefNoisyPause"
+	        android:summaryOff="@string/prefNoisyNotPause" />
+	    </PreferenceScreen>
     <PreferenceScreen
         android:title="@string/prefDisplaySetting"
         android:icon="@drawable/phone"
@@ -50,4 +66,6 @@
         android:title="@string/prefSystemDecoderTitle"
         android:key="@string/prefKeySystemDefaultDecoder"
         android:icon="@drawable/decoder" android:defaultValue="false" android:persistent="true"/>
+    
+    
 </PreferenceScreen>

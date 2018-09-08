@@ -50,6 +50,7 @@
 	        android:layout_centerVertical="true"
 	        android:clickable="true"
 	        android:contentDescription="@string/play"
+	        android:longClickable="true"
 	        android:onClick="onPlayPause"
 	        android:src="@drawable/play" />
 	

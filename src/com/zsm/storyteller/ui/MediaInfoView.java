@@ -1,7 +1,5 @@
 package com.zsm.storyteller.ui;
 
-import java.io.File;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -84,13 +82,7 @@ class MediaInfoView extends LinearLayout {
 	void setDataSource( Uri uri ) {
 		mediaInfo = new MediaInfo( getContext(), uri );
 		fillMediaInfo( mediaInfo.getTitle() );
-		textViewPath.setText(mediaInfo.getPath());
-	}
-
-	public void setDataSource(File file) {
-		mediaInfo = new MediaInfo( getContext(), file );
-		fillMediaInfo( file.getName() );
-		textViewPath.setText(file.getAbsolutePath());
+		textViewPath.setText(mediaInfo.getUri().getPath());
 	}
 
 	public long getMediaDuration() {

@@ -39,5 +39,6 @@
     <string name="permissionRequestTitle">Request for permission</string>
     <string name="permissionRequestMicrophone">Request for permission of microphone, to display audio visialization and pause.</string>
     <string name="permissionNoMicrophone">No permission of microphone, cannot display audio visialization and pause automatically.</string>
+    <string name="empty_string"></string>
     
 </resources>

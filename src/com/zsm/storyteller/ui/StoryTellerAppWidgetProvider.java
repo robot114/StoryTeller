@@ -188,9 +188,23 @@ public class StoryTellerAppWidgetProvider extends AppWidgetProvider
 	private void setPlayPauseIcon(RemoteViews rvs, AbstractPlayer.PLAYER_STATE state,
 								  PLAY_PAUSE_TYPE pauseType) {
 		
-		int playIconId
-			= ( pauseType == PLAY_PAUSE_TYPE.CONTINUOUS )
-				? R.drawable.widget_play : R.drawable.widget_play_to;
+		int playIconId;
+		switch( pauseType ) {
+			case CONTINUOUS:
+				playIconId = R.drawable.widget_play;
+				break;
+			case TO_PAUSE:
+				playIconId = R.drawable.widget_play_to;
+				break;
+			case TO_SLEEP:
+				playIconId = R.drawable.widget_timer_play;
+				break;
+			default:
+				playIconId = R.drawable.widget_play;
+				Log.w( "Invalid play pause type", pauseType );
+				break;
+		}
+	
 		playIconId
 			= (state == AbstractPlayer.PLAYER_STATE.STARTED )
 				? R.drawable.widget_pause : playIconId;

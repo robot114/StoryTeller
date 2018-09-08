@@ -84,6 +84,7 @@
             android:layout_toEndOf="@id/imageViewStop"
             android:clickable="true"
             android:contentDescription="@string/play"
+            android:longClickable="true"
             android:onClick="onPlayPause"
             android:src="@drawable/play" />
 
@@ -111,7 +112,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:layout_marginLeft="16dp"
+            android:layout_marginLeft="0dp"
             android:onClick="onPrevious"
             android:src="@drawable/play_prev" />
 

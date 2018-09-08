@@ -18,6 +18,9 @@
     <string name="prefKeyPlayTypeToPause">PLAY_TYPE</string>
     <string name="prefPlayTypeContinuously">Play continuously</string>
     <string name="prefPlayTypeToPause">Pause at each pause</string>
+    <string name="prefPlayTypeToSleep">Play for sleeping</string>
+    <string name="prefPlayPauseSleepTime">Time to play( Min ):</string>
+    <string name="prefKeyPlayPauseSleepTime">PLAY_SLEEP_TIME</string>
     <string name="prefTitlePlayTypeToPause">When to pause</string>
     <string name="volumeSetting">Volume Setting</string>
     <string name="prefKeyPauseWhenNoisy">PAUSE_WHEN_NOISY</string>

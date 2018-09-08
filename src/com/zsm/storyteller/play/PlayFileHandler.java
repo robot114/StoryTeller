@@ -1,37 +1,36 @@
 package com.zsm.storyteller.play;
 
-import java.io.File;
-
 import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
+import android.support.v4.provider.DocumentFile;
 
-import com.zsm.android.ui.fileselector.FileOperation;
-import com.zsm.android.ui.fileselector.FileSelector;
-import com.zsm.android.ui.fileselector.OnHandleFileListener;
+import com.zsm.android.ui.documentSelector.DocumentHandler;
+import com.zsm.android.ui.documentSelector.DocumentOperation;
+import com.zsm.android.ui.documentSelector.DocumentSelector;
 import com.zsm.storyteller.PlayInfo;
 import com.zsm.storyteller.app.StoryTellerApp;
 import com.zsm.storyteller.preferences.Preferences;
 
 
-public class PlayFileHandler implements OnHandleFileListener {
+public class PlayFileHandler implements DocumentHandler {
 
 	private PlayController player;
-	private FileSelector fileSelector;
 
 	public PlayFileHandler( Context context ) {
 		player = new RemotePlayer( context );
 	}
-	
+
 	@Override
-	public void handleFile(FileOperation operation, String filePath) {
-		File f = new File( filePath );
+	public void handleDocument(DocumentOperation operation,
+							   DocumentFile document, String name) {
+		
 		PlayInfo.LIST_TYPE lt = PlayInfo.LIST_TYPE.SINGLE;
 		
-		if( operation == FileOperation.FOLDER ) {
+		if( operation == DocumentOperation.FOLDER ) {
 			lt = PlayInfo.LIST_TYPE.FOLDER;
 		}
-		PlayInfo pi = new PlayInfo( lt, Uri.fromFile(f), null, 0 );
+		PlayInfo pi = new PlayInfo( lt, document.getUri(), null, 0 );
 		Preferences.getInstance().savePlayListInfo(pi);
 		player.setPlayInfo( pi );
 		if( Preferences.getInstance().autoStartPlaying() ) {
@@ -39,19 +38,35 @@ public class PlayFileHandler implements OnHandleFileListener {
 		}
 	}
 
-	public void openOne( Activity activity, String currentPath, PlayController player ) {
+//	public void openFolder( Activity activity, String currentPath, PlayController player ) {
+//		this.player = player;
+//		FileSelector fileSelector
+//			= new FileSelector( activity, FileOperation.FOLDER, currentPath, this,
+//						    StoryTellerApp.getAudioFileFilterArray( activity ) );
+//		fileSelector.show();
+//	}
+//
+//	public void openOne( Activity activity, String currentPath, PlayController player ) {
+//		this.player = player;
+//		FileSelector fileSelector
+//			= new FileSelector( activity, FileOperation.LOAD, currentPath, this,
+//							StoryTellerApp.getAudioFileFilterArray( activity ) );
+//		fileSelector.show();
+//	}
+//	
+	public void openOne( Activity activity, Uri currentPath, PlayController player ) {
 		this.player = player;
-		fileSelector
-			= new FileSelector( activity, FileOperation.LOAD, currentPath, this,
-								StoryTellerApp.getAudioFileFilterArray( activity ) );
-		fileSelector.show();
+		DocumentSelector documentSelector
+			= new DocumentSelector( activity, DocumentOperation.LOAD, currentPath, this,
+					    StoryTellerApp.getAudioFileFilterArray( activity ) );
+		documentSelector.show();
 	}
 	
-	public void openFolder( Activity activity, String currentPath, PlayController player ) {
+	public void openFolder( Activity activity, Uri currentPath, PlayController player ) {
 		this.player = player;
-		fileSelector
-			= new FileSelector( activity, FileOperation.FOLDER, currentPath, this,
-							    StoryTellerApp.getAudioFileFilterArray( activity ) );
-		fileSelector.show();
+		DocumentSelector documentSelector
+			= new DocumentSelector( activity, DocumentOperation.FOLDER, currentPath, this,
+						    StoryTellerApp.getAudioFileFilterArray( activity ) );
+		documentSelector.show();
 	}
 }

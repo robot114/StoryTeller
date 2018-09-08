@@ -6,7 +6,7 @@ import com.zsm.storyteller.PlayInfo;
 
 public interface PlayController {
 	public enum PLAY_ORDER { BY_NAME, RANDOM }
-	public enum PLAY_PAUSE_TYPE { CONTINUOUS, TO_PAUSE }
+	public enum PLAY_PAUSE_TYPE { CONTINUOUS, TO_PAUSE, TO_SLEEP }
 
 	public static final String ACTION_PLAYER_PLAY_PAUSE
 		= "com.zsm.storyteller.PLAYER.PLAY_PAUSE";

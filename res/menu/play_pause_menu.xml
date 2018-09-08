@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/itemPlayContinously"
+          android:icon="@drawable/play_small"
+          android:title="">
+    </item>
+    
+    <item android:id="@+id/itemPlayTo"
+          android:icon="@drawable/play_to_small"
+          android:title="">
+    </item>
+    
+    <item android:id="@+id/itemPlaySleep"
+          android:icon="@drawable/timer_play_small"
+          android:title="">
+    </item>
+    
+</menu>
