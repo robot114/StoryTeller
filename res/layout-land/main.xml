@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:layout_margin="5dp"
     android:padding="5dp"
-    tools:context="${relativePackage}.${activityClass}" >
+    tools:context=".ui.MainActivity" >
 
     <RelativeLayout
         android:id="@+id/layoutController2"
@@ -13,7 +13,7 @@
         android:layout_toStartOf="@+id/layoutController" >
 
         <RelativeLayout
-            android:id="@+id/layoutFile"
+            android:id="@+id/layoutVolume"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true" >
@@ -53,6 +53,16 @@
 	        android:longClickable="true"
 	        android:onClick="onPlayPause"
 	        android:src="@drawable/play" />
+
+	    <ImageView
+	        android:id="@+id/imageViewVolumeSetting"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_above="@id/imageViewPlayOrder"
+	        android:layout_centerHorizontal="true"
+	        android:clickable="true"
+	        android:onClick="onVolumeSetting"
+	        android:src="@drawable/volume_setting" />
 	
 	    <ImageView
 	        android:id="@+id/imageViewPlayOrder"
@@ -142,8 +152,7 @@
         android:id="@+id/layoutItem"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_below="@+id/timedProgressBar"
+        android:layout_below="@id/timedProgressBar"
         android:layout_toStartOf="@id/layoutController2"
         android:orientation="horizontal" >
 
@@ -178,7 +187,12 @@
             android:layout_alignParentStart="true"
             android:layout_margin="@dimen/defaultPadding"
             android:layout_weight="0.9"
-            android:groupIndicator="@null" >
+            android:choiceMode="singleChoice"
+            android:drawSelectorOnTop="true"
+            android:listSelector="@android:color/darker_gray"
+            android:touchscreenBlocksFocus="true" >
+
+ >
         </ExpandableListView>
     </LinearLayout>
 

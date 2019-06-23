@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -44,13 +45,8 @@ class MediaInfoView extends LinearLayout {
 		super(context);
 		init();
 		if( smallTextSize ) {
-			int titleAppearance = android.R.style.TextAppearance_DeviceDefault_Medium;
-			int defaultTextAppearance = android.R.style.TextAppearance_DeviceDefault;
-			textViewTitle.setTextAppearance(context, titleAppearance);
-			textViewAlbum.setTextAppearance(context, defaultTextAppearance);
-			textViewArtist.setTextAppearance(context, defaultTextAppearance);
-			textViewDuration.setTextAppearance(context, defaultTextAppearance);
-			textViewPath.setTextAppearance(context, defaultTextAppearance);
+			smallTextSize( this );
+			textViewTitle.setVisibility( View.VISIBLE );
 		}
 	}
 
@@ -68,6 +64,24 @@ class MediaInfoView extends LinearLayout {
 		textViewPath = (TextView)findViewById( R.id.textViewPath );
 		
 		clearAll();
+	}
+	
+	private void smallTextSize(ViewGroup view) {
+		Context context = getContext();
+		final int defaultTextAppearance = android.R.style.TextAppearance_DeviceDefault;
+		for(  int i = 0; i < view.getChildCount(); i++ ) {
+			View v = view.getChildAt(i);
+			if( v.getId() == R.id.textViewTitle ) {
+				final int titleAppearance = android.R.style.TextAppearance_DeviceDefault_Medium;
+				textViewTitle.setTextAppearance(context, titleAppearance);
+			} else if ( v instanceof TextView ) {
+				TextView tv = (TextView)v;
+				tv.setTextAppearance(context, defaultTextAppearance);
+				
+			} else if( v instanceof ViewGroup ) {
+				smallTextSize((ViewGroup) v);
+			}
+		}
 	}
 	
 	private void clearAll() {

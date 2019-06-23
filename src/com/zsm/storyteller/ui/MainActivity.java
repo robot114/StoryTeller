@@ -35,6 +35,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.zsm.android.ui.PopupWindows;
 import com.zsm.android.ui.TimedProgressBar;
 import com.zsm.android.ui.quickAction.QuickAction;
 import com.zsm.android.ui.quickAction.QuickAction.OnActionItemClickListener;
@@ -173,6 +174,9 @@ public class MainActivity extends FragmentActivity
 
 	private void initListView() {
 		playListView = (ExpandableListView)findViewById( R.id.listPlayList );
+		
+	    playListView.setSelected( true );
+
 		playListAdapter = new MediaInfoListAdapter( this, playListView );
 		playListView.setAdapter(playListAdapter);
 		playListView.setOnChildClickListener( this );
@@ -246,10 +250,10 @@ public class MainActivity extends FragmentActivity
 	}
 	
 	private void showPlayPopupMenu(View v) {
-		//create QuickAction. Use QuickAction.VERTICAL or QuickAction.HORIZONTAL param to define layout 
-        //orientation
-		final QuickAction quickAction = new QuickAction(this, QuickAction.VERTICAL);
-		quickAction.setRootViewId( R.layout.play_pause_menu_vertical );
+		final QuickAction quickAction
+			= new QuickAction(this, R.layout.play_pause_menu_vertical,
+							  QuickAction.ORIENTATION.VERTICAL);
+		
 		quickAction.addActionItems(this, false,
 				new int[]{PLAY_PAUSE_TYPE.CONTINUOUS.ordinal(),
 						  PLAY_PAUSE_TYPE.TO_PAUSE.ordinal(),
@@ -348,6 +352,16 @@ public class MainActivity extends FragmentActivity
 			.getPlayFileHandler().openFolder( this, currentPlaying, player );
 	}
 
+	public void onOpenOne( MenuItem item ) {
+		((StoryTellerApp)getApplication())
+			.getPlayFileHandler().openOne(this, currentPlaying, player);
+	}
+	
+	public void onOpenFolder( MenuItem item ) {
+		((StoryTellerApp)getApplication())
+			.getPlayFileHandler().openFolder( this, currentPlaying, player );
+	}
+
 	public void onPlayPause( View v ) {
 		player.playPause();
 	}
@@ -431,6 +445,11 @@ public class MainActivity extends FragmentActivity
 	public void selectOneToPlay(Uri uri) {
 		player.play(uri, 0 );
 	}
+	
+	public void onVolumeSetting( View v ) {
+		PopupWindows window = new VolumeWindow(this, player);
+		window.show( v );
+	}
 
 	@Override
 	public boolean onChildClick(ExpandableListView parent, View v,
@@ -473,8 +492,8 @@ public class MainActivity extends FragmentActivity
 	public void setDataSource(Context context, Uri uri) {
 		this.currentPlaying = uri;
 		adapterViewPager.setDataSource( viewPager.getCurrentItem(), uri );
-		playingText.setText( uri.getLastPathSegment() );
 		MediaInfo mi = new MediaInfo( context, uri );
+		playingText.setText( mi.getTitle() );
 		progressBar.setDuration( mi.getDuration() );
 		updateNotification();
 		
@@ -492,6 +511,8 @@ public class MainActivity extends FragmentActivity
 	    if (position < first || position >= last ) {
 	        playListView.smoothScrollToPosition(position);
 	    }
+		playListView.setSelection(position);
+	    System.out.println( "=====" + playListView.getSelectedItemPosition() + ", " + playListView.getSelectedPosition() + ", " + position );
 	}
 	
 	@Override

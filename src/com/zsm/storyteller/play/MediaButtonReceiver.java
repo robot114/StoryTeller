@@ -7,6 +7,7 @@ import android.os.SystemClock;
 import android.view.KeyEvent;
 
 import com.zsm.android.util.IntentUtil;
+import com.zsm.storyteller.preferences.Preferences;
 
 public class MediaButtonReceiver extends BroadcastReceiver {
 
@@ -28,8 +29,10 @@ public class MediaButtonReceiver extends BroadcastReceiver {
         	
         	return;
         }
+        
         String action = null;
-        switch (event.getKeyCode()) {
+        int mappedCode = codeMapping( event.getKeyCode() );
+        switch (mappedCode) {
 	        //这里根据按下的时间和操作，分离出具体的控制
 	        case KeyEvent.KEYCODE_HEADSETHOOK:
 	        	action = handleHandsetHook( event );
@@ -63,7 +66,16 @@ public class MediaButtonReceiver extends BroadcastReceiver {
         IntentUtil.sendActionToService(context, action, PlayController.REQUEST_PLAY_CODE);
     }
 
-    /*
+    private int codeMapping(int keyCode) {
+    	switch( keyCode ) {
+    		case KeyEvent.KEYCODE_MEDIA_NEXT:
+    			return Preferences.getInstance().getMediaNextButtonMap();
+    		default:
+    			return keyCode;
+    	}
+	}
+
+	/*
      * one click => play/pause long click => previous double click => next
      */
 	private long mHeadsetDownTime;

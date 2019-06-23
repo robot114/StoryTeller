@@ -48,6 +48,11 @@
 	        android:key="@string/prefKeyPauseWhenNoisy"
 	        android:summaryOn="@string/prefNoisyPause"
 	        android:summaryOff="@string/prefNoisyNotPause" />
+	    <CheckBoxPreference
+	        android:title="@string/prefTitleMediaButtonNextAsForward"
+	        android:key="@string/prefKeyMediaButtonNextAsForward"
+	        android:summaryOn="@string/prefMediaButtonNextAsForward"
+	        android:summaryOff="@string/prefMediaButtonNextAsNext" />
 	    </PreferenceScreen>
     <PreferenceScreen
         android:title="@string/prefDisplaySetting"

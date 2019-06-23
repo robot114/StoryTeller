@@ -2,6 +2,7 @@ package com.zsm.storyteller.ui;
 
 import java.util.List;
 
+import android.R.color;
 import android.content.Context;
 import android.net.Uri;
 import android.view.LayoutInflater;
@@ -104,6 +105,14 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 	    } else {
 	    	viewImage.setImageResource( R.drawable.to_exapand );
 	    }
+	    
+	    System.out.println( listView.getSelectedItemPosition() + ", " + listView.getSelectedPosition() + ", " + groupPosition );
+	    if( listView.getSelectedItemPosition() == groupPosition ) {
+	        view.setBackgroundResource(color.darker_gray);
+	    }else{
+	        view.setBackgroundColor(color.transparent);
+	    }
+	    
 	    return view;
 	}
 
@@ -167,7 +176,7 @@ class MediaInfoListAdapter extends BaseExpandableListAdapter {
 
 	@Override
 	public boolean isChildSelectable(int groupPosition, int childPosition) {
-		return true;
+		return false;
 	}
 	
 	private Uri getMediaItem(int groupPosition) {

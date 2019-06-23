@@ -3,11 +3,16 @@ package com.zsm.storyteller.preferences;
 import java.util.Hashtable;
 import java.util.Set;
 
+import com.zsm.log.Log;
+import com.zsm.storyteller.R;
+import com.zsm.storyteller.preferences.Preferences.FORWARD_SKIP_TYPE;
+
 import android.content.Context;
 import android.graphics.Paint;
 import android.preference.Preference;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.AttributeSet;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -20,12 +25,7 @@ import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
-import android.widget.TextView;
-import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
-
-import com.zsm.storyteller.R;
-import com.zsm.storyteller.preferences.Preferences.FORWARD_SKIP_TYPE;
 
 public class ForwardSettingPrference extends Preference {
 
@@ -142,31 +142,32 @@ public class ForwardSettingPrference extends Preference {
 			}
 		};
 		
-		tss.setOnEditorActionListener( new OnEditorActionListener(){
+		tss.addTextChangedListener( new TextWatcher() {
+
 			@Override
-			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {
 				updateSeekBarByEdit( tss, pss, skipSecConvertor );
 				rsp.setChecked( false );
 				rss.setChecked( true );
 				storeForwardRewind();
-				return true;
 			}
+			
 		} );
-		tss.setOnClickListener( new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				rsp.setChecked( false );
-				rss.setChecked( true );
-				storeForwardRewind();
-			}
-		} );
-		
+
 		boolean sha = pref.getSkipHeaderAuto();
 		final CheckBox skipHeaderAuto = (CheckBox)vs.get( COMPONENT_KEY.CHECKBOX_SKIPHEADER );
 		skipHeaderAuto.setChecked( sha );
 		int shs = pref.getSkipHeaderValue();
 		final EditText tvsh = (EditText)vs.get(COMPONENT_KEY.EDITTEXT_SKIPHEADER);
-		setSkipHeaderText( tvsh, shs );
+		setEditTextValue( tvsh, shs );
 		final SeekBar shaBar = (SeekBar)vs.get( COMPONENT_KEY.SEEKBAR_SKIPHEADER );
 		shaBar.setProgress( shs );
 		
@@ -184,20 +185,24 @@ public class ForwardSettingPrference extends Preference {
 			}
 		};
 		
-		tvsh.setOnEditorActionListener( new OnEditorActionListener(){
+		tvsh.addTextChangedListener( new TextWatcher() {
+
 			@Override
-			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-				updateSeekBarByEdit( tvsh, shaBar, skipHeaderConvertor );
-				storeSkipHeader();
-				return true;
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 			}
-		} );
-		tvsh.setOnClickListener( new OnClickListener() {
+
 			@Override
-			public void onClick(View v) {
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {
+				updateSeekBarByEdit( tvsh, shaBar, skipHeaderConvertor );
 				skipHeaderAuto.setChecked(true);
 				storeSkipHeader();
+				tvsh.requestFocus();
 			}
+			
 		} );
 	}
 
@@ -245,8 +250,8 @@ public class ForwardSettingPrference extends Preference {
 		((SeekBar)(vs.get( COMPONENT_KEY.SEEKBAR_SECOND )))
 				.setOnSeekBarChangeListener(forwardRewindListener);
 		
-		vs.get( COMPONENT_KEY.EDITTEXT_SKIPHEADER )
-				.setOnClickListener( skipHeaderListener );
+//		vs.get( COMPONENT_KEY.EDITTEXT_SKIPHEADER )
+//				.setOnClickListener( skipHeaderListener );
 		((SeekBar)vs.get( COMPONENT_KEY.SEEKBAR_SKIPHEADER ))
 				.setOnSeekBarChangeListener( skipHeaderListener );
 		CheckBox cbsh = (CheckBox) vs.get( COMPONENT_KEY.CHECKBOX_SKIPHEADER );
@@ -293,7 +298,7 @@ public class ForwardSettingPrference extends Preference {
 		}
 		int second
 			= Preferences.forwardSkipSecondProgressToRealValue( factoredValue);
-		tss.setText( String.valueOf( second ) );
+		setEditTextValue( tss, second );
 	}
 
 	private void setPercentText(RadioButton button, int factoredValue) {
@@ -306,8 +311,16 @@ public class ForwardSettingPrference extends Preference {
 		button.setText( text );
 	}
 
-	private void setSkipHeaderText(EditText tv, int value) {
-		tv.setText( String.valueOf(value) );
+	private void setEditTextValue( EditText e, int value ) {
+		try {
+			int currentValue = Integer.valueOf( e.getText().toString() );
+			if( currentValue != value ) {
+				e.setText( String.valueOf(value) );
+			}
+		} catch ( Exception ee ) {
+			Log.i( ee, "Invalid text to int", e, e.getText() );
+			e.setText( String.valueOf(value) );
+		}
 	}
 	
 	private void storeForwardRewind() {
@@ -329,14 +342,13 @@ public class ForwardSettingPrference extends Preference {
 	}
 
 	private class SkipHeaderListener 
-					implements OnSeekBarChangeListener, OnClickListener,
-								OnCheckedChangeListener {
+					implements OnSeekBarChangeListener, OnCheckedChangeListener {
 
 		@Override
 		public void onProgressChanged(SeekBar seekBar, int progress,
 									  boolean fromUser) {
 			
-			setSkipHeaderText(editSkipHeader, progress );
+			setEditTextValue(editSkipHeader, progress );
 		}
 
 		@Override
@@ -350,16 +362,6 @@ public class ForwardSettingPrference extends Preference {
 
 		@Override
 		public void onStopTrackingTouch(SeekBar seekBar) {
-			storeSkipHeader();
-		}
-
-		@Override
-		public void onClick(View v) {
-			if( v != editSkipHeader ) {
-				restoreViews( v );
-			}
-			
-			checkBoxSkipHeader.setChecked(!checkBoxSkipHeader.isChecked());
 			storeSkipHeader();
 		}
 

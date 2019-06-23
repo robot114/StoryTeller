@@ -363,6 +363,10 @@ public class PlayService extends Service
 					player.enableAudioListener( source, enabled );
 				}
 				break;
+			case ACTION_CHANGE_VOLUME_FACTOR:
+				int gainmB = intent.getIntExtra( KEY_VOLUME_FACTOR, 0 );
+				changeVolumeLoudnessEnhance(gainmB);
+				break;
 			default:
 				Log.w( "Unsupported action", intent );
 				break;
@@ -663,5 +667,10 @@ public class PlayService extends Service
 	@Override
 	public void notifyCannotPlay(int promptId) {
 		Toast.makeText( this, promptId, Toast.LENGTH_LONG ).show();
+	}
+
+	@Override
+	public void changeVolumeLoudnessEnhance(int gainmB) {
+		player.changeVolumeLoudnessEnhance(gainmB);
 	}
 }

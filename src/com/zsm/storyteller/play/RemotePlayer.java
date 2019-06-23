@@ -175,4 +175,11 @@ public class RemotePlayer implements PlayController {
 			playerSemaphore.release();
 		}
 	}
+
+	@Override
+	public void changeVolumeLoudnessEnhance(int gainmB) {
+		Bundle bundle = new Bundle();
+		bundle.putInt( KEY_VOLUME_FACTOR, gainmB );
+		sendRequest(ACTION_CHANGE_VOLUME_FACTOR, bundle);
+	}
 }

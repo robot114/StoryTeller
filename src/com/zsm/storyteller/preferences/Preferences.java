@@ -9,6 +9,7 @@ import android.content.res.Resources;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.preference.PreferenceManager;
+import android.view.KeyEvent;
 
 import com.zsm.log.Log;
 import com.zsm.storyteller.PlayInfo;
@@ -49,10 +50,12 @@ public class Preferences {
 	private static final String KEY_SILENCE_TOILENCE = "SILENCE_TOILENCE";
 	private static final String KEY_HEADSET_MUSIC_VOLUME = "HEADSET_MUSIC_VOLUME";
 	private static final String KEY_PLAY_SLEEP_TIME = "PLAY_SLEEP_TIME";
+	private static final String KEY_VOLUME_FACTOR = "VOLUME_FACTOR";
 
 	public static String KEY_PLAY_ORDER = null;
 	public static String KEY_PLAY_TYPE_TO_PAUSE = null;
 	public static String KEY_PAUSE_WHEN_NOISY = null;
+	public static String KEY_MEDIA_NEXT_BUTTON_MAP_AS_FWD = null;
 	static String KEY_SYSTEM_DEFAULT_DECODER = null;
 	private static String KEY_SCREEN_WHEN_PLAY = null;
 	
@@ -80,6 +83,7 @@ public class Preferences {
 		KEY_PLAY_ORDER = r.getString( R.string.prefKeyPlayOrder );
 		KEY_PLAY_TYPE_TO_PAUSE = r.getString( R.string.prefKeyPlayTypeToPause );
 		KEY_PAUSE_WHEN_NOISY = r.getString( R.string.prefKeyPauseWhenNoisy );
+		KEY_MEDIA_NEXT_BUTTON_MAP_AS_FWD = r.getString( R.string.prefKeyMediaButtonNextAsForward );
 		KEY_SCREEN_WHEN_PLAY = r.getString( R.string.prefKeyScreenOnWhenPlay );
 		KEY_SYSTEM_DEFAULT_DECODER
 			= r.getString( R.string.prefKeySystemDefaultDecoder );
@@ -360,5 +364,26 @@ public class Preferences {
 	public void clear() {
 		Log.d( "All preferences are cleared!" );
 		preferences.edit().clear().commit();
+	}
+
+	public int getMediaNextButtonMap() {
+		boolean map = preferences.getBoolean(KEY_MEDIA_NEXT_BUTTON_MAP_AS_FWD, false );
+		return map ? KeyEvent.KEYCODE_MEDIA_FAST_FORWARD : KeyEvent.KEYCODE_MEDIA_NEXT;
+	}
+
+	public int getVolumeFactor() {
+		return preferences.getInt( KEY_VOLUME_FACTOR, 1 );
+	}
+
+	private static int[] GAIN_MBS
+		= { 0, 1, 2, 5, 15, 50, 200, 800, 2000, 3300, 4700, 6200, 7800, 9000, 9500, 10000 };
+	public int getLoudnessEnhancerValuebyVolumeFactor() {
+		int factor = preferences.getInt( KEY_VOLUME_FACTOR, 0 );
+		factor = Math.min( GAIN_MBS.length-1, Math.max( 0, factor) );
+		return GAIN_MBS[factor];
+	}
+
+	public void setVolumeFactor(int volumeFactor) {
+		preferences.edit().putInt(KEY_VOLUME_FACTOR, volumeFactor ).commit();
 	}
 }

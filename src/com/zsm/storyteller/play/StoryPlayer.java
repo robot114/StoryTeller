@@ -5,6 +5,9 @@ import java.util.HashSet;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.LoudnessEnhancer;
+import android.media.audiofx.NoiseSuppressor;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -72,6 +75,8 @@ class StoryPlayer implements PlayController {
 	private boolean newStartFlag;
 	
 	private HashSet<String> mListenBy = new HashSet<String>();
+
+	private LoudnessEnhancer mLoudnessEnhancer;
 
 	public StoryPlayer( Context context, PlayerNotifier playerNotifier ) {
 		this.context = context;
@@ -173,6 +178,10 @@ class StoryPlayer implements PlayController {
 		
 		assert( timeTimerTask.state != TASK_STATE.STOP );
 		timeTimerTask.state = TASK_STATE.RUNNING;
+		
+		int gainmB = Preferences.getInstance().getLoudnessEnhancerValuebyVolumeFactor();
+		changeVolumeLoudnessEnhance( gainmB );
+
 	}
 	
 	@Override
@@ -436,5 +445,19 @@ class StoryPlayer implements PlayController {
 
 	public int getAudioCaptureRate() {
 		return mediaPlayer.getAudioCaptureRate();
+	}
+	
+	@Override
+	public void changeVolumeLoudnessEnhance( int gainmB ) {
+		final int audioSessionId = mediaPlayer.getAudioSessionId();
+		if( mLoudnessEnhancer == null ) {
+			mLoudnessEnhancer = new LoudnessEnhancer( audioSessionId );
+		}
+		
+        NoiseSuppressor.create(audioSessionId);
+        AcousticEchoCanceler.create(audioSessionId);
+
+        mLoudnessEnhancer.setTargetGain(gainmB);
+        mLoudnessEnhancer.setEnabled(true);
 	}
 }

@@ -40,6 +40,8 @@ public interface PlayController {
 		= "com.zsm.storyteller.PLAYER.UPDATE_PLAY_PAUSE_TYPE";
 	public final static String ACTION_ENABLE_CAPTURE
 		= "com.zsm.storyteller.PLAYER.ENABLE_CAPTURE";
+	public final static String ACTION_CHANGE_VOLUME_FACTOR
+		= "com.zsm.storyteller.PLAYER.CHANGE_VOLUME_FACTOR";
 	
 	public static final int REQUEST_RETRIEVE_CODE = 100;
 	public static final int REQUEST_PLAY_CODE = 101;
@@ -53,6 +55,7 @@ public interface PlayController {
 	public static final String KEY_PLAY_ITEM = "PLAY_ITEM";
 	public static final String KEY_ENABLE_CAPTURE = "ENABLE_CAPTURE";
 	public static final String KEY_CAPTURE_SOURCE = "CAPTURE_SOURCE";
+	public static final String KEY_VOLUME_FACTOR = "VOLUME_FACTOR";
 	
 	void play(Uri uri, int startPosition);
 
@@ -81,4 +84,6 @@ public interface PlayController {
 	AbstractPlayer.PLAYER_STATE getState();
 
 	void enableAudioListener(String source, boolean enabled);
+
+	void changeVolumeLoudnessEnhance(int gainmB);
 }

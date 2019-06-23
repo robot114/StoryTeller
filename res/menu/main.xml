@@ -6,15 +6,21 @@
           android:icon="@drawable/settings"
           android:alphabeticShortcut="P"
           android:onClick="onPreferences"
-          android:showAsAction="never">
+          android:showAsAction="never" android:menuCategory="system">
     </item>
     <item android:id="@+id/itemMode"
           android:showAsAction="ifRoom"
-          android:title="@string/menuMode">
+          android:title="@string/menuMode" android:icon="@drawable/mode" android:alphabeticShortcut="M" android:titleCondensed="M" android:menuCategory="system">
         <menu >
             <item android:id="@+id/itemModeMusic" android:title="@string/modeMusic" android:icon="@drawable/music" android:onClick="onChangeMode"/>
             <item android:id="@+id/itemModeReading" android:title="@string/modeReading" android:icon="@drawable/reading" android:onClick="onChangeMode"/>
             <item android:id="@+id/itemModeStudy" android:title="@string/modeStudy" android:icon="@drawable/study" android:onClick="onChangeMode"/>
+        </menu>
+    </item>
+    <item android:id="@+id/itemOpen" android:titleCondensed="O" android:title="@string/menuOpen" android:alphabeticShortcut="O" android:showAsAction="always" android:icon="@drawable/open" android:menuCategory="system">
+        <menu>
+            <item android:id="@+id/itemOpenFolder" android:icon="@drawable/open_folder" android:title="@string/openFolder" android:onClick="onOpenFolder"/>
+            <item android:id="@+id/itemOpenOne" android:icon="@drawable/open_one" android:title="@string/opneOne" android:onClick="onOpenOne"/>
         </menu>
     </item>
 </menu>

@@ -1,0 +1,10 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/SecondaryProgress"
+        android:drawable="@drawable/volume_lowest_1"/>
+    <item>
+        <clip
+	        android:id="@+android:id/progress"
+	        android:drawable="@drawable/volume_highest_1"/>
+    </item>
+</layer-list>

@@ -27,6 +27,10 @@
     <string name="prefPauseWhenNoisy">Pause when the audio becoming noisy</string>
     <string name="prefNoisyPause">Pause playing when the audio becoming noisy</string>
     <string name="prefNoisyNotPause">Do nothing when the audio becoming noisy</string>
+    <string name="prefKeyMediaButtonNextAsForward">MEDIA_BUTTON_NEXT_AS_FORWARD</string>
+    <string name="prefTitleMediaButtonNextAsForward">Next button on headset mapping</string>
+    <string name="prefMediaButtonNextAsForward">Next button on headset mapped as FORWARD</string>
+    <string name="prefMediaButtonNextAsNext">Next button on headset used as NEXT</string>
     <string name="prefKeyScreenOnWhenPlay">SCREEN_WHEN_PLAY</string>
     <string name="prefDisplaySetting">Display Setting</string>
     <string name="prefDisplaySettingSummary">Setting on displaying</string>
