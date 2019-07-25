@@ -248,6 +248,7 @@ class StoryPlayer implements PlayController {
 		stopTimeTimerTask();
 		mediaPlayer.enableAudioDataListener(false);
 		updateTime( 0, 0, 0 );
+		mLoudnessEnhancer = null;
 	}
 	
 	private boolean inPlayingState() {
