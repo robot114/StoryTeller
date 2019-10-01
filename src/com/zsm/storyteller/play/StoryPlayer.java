@@ -450,6 +450,10 @@ class StoryPlayer implements PlayController {
 	
 	@Override
 	public void changeVolumeLoudnessEnhance( int gainmB ) {
+		if( !mediaPlayer.isPlaying() ) {
+			return;
+		}
+		
 		final int audioSessionId = mediaPlayer.getAudioSessionId();
 		if( mLoudnessEnhancer == null ) {
 			mLoudnessEnhancer = new LoudnessEnhancer( audioSessionId );
